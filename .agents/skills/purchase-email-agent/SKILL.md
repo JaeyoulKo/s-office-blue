@@ -23,9 +23,9 @@ UI 구현이나 이미지 자체의 검토, 스토리보드 변경 반영, 문�
 
 ## MCP 우선 연동 원칙
 
-업무 절차는 이 Skill이 정의하고, 외부 시스템 읽기/쓰기는 MCP Tool이 담당하며, 화면이 필요한 제품 기능은 React/Next.js UI가 담당한다. UI는 MCP Tool 또는 외부 시스템을 직접 대체하지 않으며, 이 Skill도 API 서버를 만들거나 호출 계약을 정의하지 않는다.
+업무 절차는 이 Skill이 정의하고, 외부 시스템 읽기/쓰기는 MCP Tool이 담당하며, 화면이 필요한 제품 기능은 Streamlit 또는 React/Next.js UI가 담당한다. UI는 MCP Tool 또는 외부 시스템을 직접 대체하지 않으며, 이 Skill도 REST API 서버를 만들거나 Gmail OAuth 자격 증명을 직접 관리하지 않는다.
 
-MCP Tool 사용 전 현재 Codex 환경에서 사용할 수 있는 서버·도구·권한을 확인한다. 현재 환경에서는 Gmail, Ariba, 파일시스템, 데이터베이스의 업무 데이터를 읽거나 쓰는 MCP Tool이 확인되지 않았다. 연결된 문서 세션도 없다. 따라서 이메일/첨부파일/과거 계약 자료는 사용자가 직접 제공한 자료로만 검토한다. 실제 사용 가능한 도구명은 가정하거나 문서에 만들어 내지 않는다.
+MCP Tool 사용 전 현재 Codex 환경에서 사용할 수 있는 서버·도구·권한을 확인한다. 2026-08-07 현재 OpenAI Gmail 커넥터의 읽기 도구는 확인됐으며, Streamlit에서는 별도 Gmail OAuth 토큰을 저장하지 않고 인증된 Codex CLI를 읽기 전용 실행 주체로 사용할 수 있다. Ariba, 파일시스템, 데이터베이스의 업무 데이터를 읽거나 쓰는 MCP Tool과 연결된 문서 세션은 확인되지 않았다. 실제 사용 가능한 도구명은 실행 시 다시 확인하며 가정하거나 문서에 만들어 내지 않는다.
 
 [mcp-integration.md](references/mcp-integration.md)를 읽어 필요한 MCP capability, 읽기/쓰기 구분, 사용자 승인, 도구 미가용 시 대체 절차를 확인한다. MCP Tool의 읽기 결과는 제공 자료와 같은 증거로 취급하되, 출처를 `MCP Tool 결과`로 표시한다.
 
