@@ -1,0 +1,10 @@
+{
+  "message_id": "gmail-message-id",
+  "thread_id": "gmail-thread-id",
+  "sender": "requester@example.com",
+  "recipients": ["buyer@example.com"],
+  "subject": "노트북 구매 요청",
+  "body": "품목: 개발용 노트북\n목적: 신규 입사자 업무용\n수량: 3개\n납기: 2026-08-20까지",
+  "received_at": "2026-08-07T09:00:00+09:00",
+  "attachments": []
+}
