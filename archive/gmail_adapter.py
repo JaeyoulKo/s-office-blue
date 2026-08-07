@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Callable, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,7 +38,7 @@ class GmailMessagePayload(BaseModel):
 
 
 class GmailGateway(Protocol):
-    """Boundary implemented only after a real Gmail MCP schema is available."""
+    """Read-only boundary that supplies one complete Gmail thread."""
 
     def fetch_thread(self, thread_id: str) -> list[GmailMessagePayload]: ...
 
@@ -47,6 +47,57 @@ class UnavailableGmailGateway:
     def fetch_thread(self, thread_id: str) -> list[GmailMessagePayload]:
         raise GmailUnavailableError(
             "No Gmail MCP message/thread/attachment capability is available in this environment."
+        )
+
+
+class CodexGmailGateway:
+    """Use the team's existing read-only Codex Gmail bridge for Archive threads."""
+
+    def __init__(
+        self,
+        thread_fetcher: Callable[[str], list[dict[str, Any]]] | None = None,
+    ) -> None:
+        if thread_fetcher is None:
+            from office_blue.codex_gmail_bridge import fetch_gmail_thread
+
+            thread_fetcher = fetch_gmail_thread
+        self.thread_fetcher = thread_fetcher
+
+    def fetch_thread(self, thread_id: str) -> list[GmailMessagePayload]:
+        raw_messages = self.thread_fetcher(thread_id)
+        if not raw_messages:
+            raise GmailUnavailableError("The selected Gmail thread contains no accessible messages.")
+        payloads = [self._payload(item) for item in raw_messages]
+        if any(payload.thread_id != thread_id for payload in payloads):
+            raise ValueError("Gmail thread result contains a different thread ID.")
+        return payloads
+
+    @staticmethod
+    def _payload(data: dict[str, Any]) -> GmailMessagePayload:
+        message_id = data.get("message_id") or data.get("id")
+        thread_id = data.get("thread_id") or data.get("threadId")
+        if not str(message_id or "").strip() or not str(thread_id or "").strip():
+            raise ValueError("Gmail message ID and thread ID are required.")
+        received_at = data.get("received_at") or data.get("timestamp") or data.get("date")
+        if not str(received_at or "").strip():
+            raise ValueError("Gmail message timestamp is unavailable; it cannot be guessed.")
+        recipients = data.get("recipients") or data.get("to") or []
+        if isinstance(recipients, str):
+            recipients = [recipients]
+        attachments = data.get("attachments") or []
+        return GmailMessagePayload(
+            message_id=str(message_id),
+            thread_id=str(thread_id),
+            subject=str(data.get("subject") or UNKNOWN),
+            sender=str(data.get("sender") or data.get("from") or UNKNOWN),
+            recipients=[str(value) for value in recipients],
+            sent_at=received_at,
+            body_text=str(data.get("body") or data.get("body_text") or UNKNOWN),
+            attachments=[
+                GmailAttachmentPayload(file_name=str(file_name))
+                for file_name in attachments
+                if str(file_name).strip()
+            ],
         )
 
 

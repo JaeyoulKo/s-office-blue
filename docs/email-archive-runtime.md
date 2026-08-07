@@ -10,7 +10,15 @@ EmailThread → ArchiveAnalyzer → ExcelRecordRepository search
 
 ## Current capability
 
-No Gmail message/thread/attachment MCP tool is available in the current Codex environment. `UnavailableGmailGateway` reports that state and no production mock is substituted. A future `McpGmailGateway` must be added only after the real MCP tool schema is known.
+The Archive UI reuses the team's authenticated, read-only Codex Gmail bridge. Inbox search uses
+`fetch_gmail_snapshot()`. After a user selects a message, `fetch_gmail_thread()` reads every
+accessible message for that exact thread ID, and `CodexGmailGateway` normalizes it through
+`GmailAdapter` into `EmailThread`. The bridge does not send, draft, label, archive, or delete mail.
+
+The current verified Gmail snapshot schema provides message/thread IDs, sender, recipients,
+subject, body, received time, and attachment file names. It does not provide CC, reference IDs,
+attachment MIME/ID, or attachment content. Those values remain empty or `unknown`, and attachment
+content is marked `unverified` rather than treated as analyzed.
 
 No connected spreadsheet document session is available. The approved fallback is a repository-local `.xlsx` workbook. Paths outside the repository are rejected.
 
@@ -30,10 +38,10 @@ Streamlit review UI:
 streamlit run streamlit_app.py
 ```
 
-The UI uses `tests/fixtures` only as a temporary development input provider while Gmail MCP is
-unavailable. `Analyze Archive` is preview-only. Only an explicit `Save Archive` click writes to the
-repository-local `artifacts/email_archive_streamlit.xlsx` workbook. Ambiguous matches show candidate
-evidence and disable saving.
+Live Gmail is the default input. `tests/fixtures` remains an explicit development/testing option.
+`Analyze Archive` is preview-only. Only an explicit `Save Archive` click writes the exact previewed
+thread and analysis to the repository-local `artifacts/email_archive_streamlit.xlsx` workbook.
+Ambiguous matches show candidate evidence and disable saving.
 
 CLI preview does not create or modify a workbook:
 
@@ -51,8 +59,6 @@ python -m archive.cli --input tests/fixtures/thread_initial.json \
 ```
 
 For real LLM analysis, omit `--analysis-fixture`, set `OPENAI_API_KEY`, and optionally set `OPENAI_MODEL`. The implementation uses OpenAI Responses Structured Outputs and validates the result as `ThreadAnalysis`.
-
-`--gmail-thread-id` currently returns a clear unavailable error. It does not fabricate Gmail data.
 
 ## Workbook repository
 

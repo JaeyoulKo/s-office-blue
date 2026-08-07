@@ -13,11 +13,23 @@ def _app(tmp_path: Path, monkeypatch) -> tuple[AppTest, Path]:
     workbook = tmp_path / "archive.xlsx"
     monkeypatch.setenv("ARCHIVE_REPOSITORY_ROOT", str(tmp_path))
     monkeypatch.setenv("ARCHIVE_WORKBOOK", "archive.xlsx")
-    return AppTest.from_file(str(APP), default_timeout=30).run(), workbook
+    app = AppTest.from_file(str(APP), default_timeout=30).run()
+    app = app.radio[0].set_value("Development fixtures").run()
+    return app, workbook
 
 
 def _button(app: AppTest, label: str):
     return next(button for button in app.button if button.label == label)
+
+
+def test_live_gmail_is_default_and_requires_inbox_selection(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ARCHIVE_REPOSITORY_ROOT", str(tmp_path))
+    monkeypatch.setenv("ARCHIVE_WORKBOOK", "archive.xlsx")
+    app = AppTest.from_file(str(APP), default_timeout=30).run()
+
+    assert app.radio[0].value == "Live Gmail"
+    assert _button(app, "Gmail 새로고침")
+    assert _button(app, "Analyze Archive").disabled is True
 
 
 def test_preview_does_not_write_and_save_creates_workbook(tmp_path: Path, monkeypatch) -> None:
@@ -32,6 +44,7 @@ def test_preview_does_not_write_and_save_creates_workbook(tmp_path: Path, monkey
     assert not app.exception
     assert workbook.exists()
     assert any("Archive 저장 완료" in item.value for item in app.success)
+    assert _button(app, "Save Archive").disabled is True
 
     book = load_workbook(workbook, read_only=True, data_only=True)
     try:

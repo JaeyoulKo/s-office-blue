@@ -42,3 +42,18 @@ $env:PYTHONPATH = "src"
 python -m unittest discover -s tests -v
 ```
 
+## Email Archive 화면
+
+실제 Gmail Thread를 분석하고 명시적으로 승인된 결과만 repository-local Excel workbook에
+저장한다. 받은편지함 조회와 Thread 읽기는 위와 동일한 read-only Codex Gmail bridge를
+재사용한다.
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+$env:OPENAI_API_KEY = "..."
+python -m streamlit run streamlit_app.py
+```
+
+`Analyze Archive`는 preview만 생성한다. `Save Archive`를 클릭해야만 Excel에 기록되며,
+ambiguous match에서는 저장 버튼이 비활성화된다. Fixture 입력은 development/testing
+옵션으로만 유지된다.

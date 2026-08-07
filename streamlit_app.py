@@ -7,10 +7,12 @@ from typing import Any
 
 import streamlit as st
 
-from archive.analyzer import FixtureArchiveAnalyzer
+from archive.analyzer import FixtureArchiveAnalyzer, OpenAIArchiveAnalyzer
+from archive.gmail_adapter import CodexGmailGateway, GmailAdapter
 from archive.models import ArchiveResult, EmailThread, ThreadAnalysis
 from archive.service import ArchiveService
 from archive.storage import ExcelRecordRepository
+from office_blue.codex_gmail_bridge import fetch_gmail_snapshot
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -41,6 +43,21 @@ def fixture_service(selection: str) -> tuple[EmailThread, ArchiveService]:
     )
     service = ArchiveService(FixtureArchiveAnalyzer(analysis), repository())
     return thread, service
+
+
+def live_thread(thread_id: str) -> EmailThread:
+    return GmailAdapter(CodexGmailGateway()).fetch_normalized_thread(thread_id)
+
+
+def live_service() -> ArchiveService:
+    return ArchiveService(OpenAIArchiveAnalyzer(), repository())
+
+
+def clear_preview() -> None:
+    st.session_state.pop("archive_result", None)
+    st.session_state.pop("preview_thread", None)
+    st.session_state.pop("preview_key", None)
+    st.session_state.pop("save_result", None)
 
 
 def render_list(title: str, values: list[str]) -> None:
@@ -173,18 +190,77 @@ def _unique_changes(changes: list[Any]) -> list[Any]:
 def main() -> None:
     st.set_page_config(page_title="Email Archive", page_icon="📨", layout="wide")
     st.title("Email Archive Review")
-    st.caption("Fixture input provider · Gmail MCP 연결 전 개발 및 테스트 전용")
+    st.caption("Live Gmail thread → Archive analysis → approved local Excel storage")
 
-    selection = st.selectbox("이메일 / Thread 선택", list(FIXTURES), key="fixture_selection")
-    if st.session_state.get("active_selection") != selection:
-        st.session_state.pop("archive_result", None)
-        st.session_state.pop("save_result", None)
+    source = st.radio(
+        "Input source",
+        ["Live Gmail", "Development fixtures"],
+        horizontal=True,
+        key="input_source",
+    )
+    if st.session_state.get("active_source") != source:
+        clear_preview()
+        st.session_state.active_source = source
 
-    if st.button("Analyze Archive", type="primary", key="analyze_archive"):
+    selection = None
+    selected_thread_id = None
+    if source == "Live Gmail":
+        gmail_query = st.text_input(
+            "Gmail 검색어",
+            value="in:inbox newer_than:7d",
+            key="archive_gmail_query",
+        )
+        if st.button("Gmail 새로고침", key="refresh_gmail"):
+            with st.spinner("Gmail MCP에서 받은편지함을 읽고 있습니다..."):
+                try:
+                    st.session_state.archive_gmail_messages = fetch_gmail_snapshot(gmail_query)
+                    clear_preview()
+                except (ValueError, RuntimeError) as error:
+                    st.error(f"Gmail MCP 조회 실패: {error}")
+                else:
+                    st.success(
+                        f"{len(st.session_state.archive_gmail_messages)}개 메시지를 불러왔습니다."
+                    )
+        gmail_messages = st.session_state.get("archive_gmail_messages", [])
+        if gmail_messages:
+            selection = st.selectbox(
+                "Archive할 Gmail 메시지 / Thread",
+                range(len(gmail_messages)),
+                format_func=lambda index: _gmail_label(gmail_messages[index]),
+                key="gmail_message_selection",
+            )
+            selected_thread_id = str(gmail_messages[selection].get("thread_id") or "")
+            if not selected_thread_id:
+                st.error("선택한 Gmail 메시지에 thread_id가 없습니다.")
+        else:
+            st.info("Gmail 새로고침 후 Archive할 메시지와 Thread를 선택하세요.")
+    else:
+        selection = st.selectbox(
+            "이메일 / Thread 선택",
+            list(FIXTURES),
+            key="fixture_selection",
+        )
+
+    current_key = f"{source}:{selected_thread_id or selection}"
+    if st.session_state.get("preview_key") not in {None, current_key}:
+        clear_preview()
+
+    analyze_disabled = source == "Live Gmail" and not selected_thread_id
+    if st.button(
+        "Analyze Archive",
+        type="primary",
+        key="analyze_archive",
+        disabled=analyze_disabled,
+    ):
         try:
-            thread, service = fixture_service(selection)
+            if source == "Live Gmail":
+                thread = live_thread(selected_thread_id)
+                service = live_service()
+            else:
+                thread, service = fixture_service(selection)
             st.session_state.archive_result = service.process(thread, write=False)
-            st.session_state.active_selection = selection
+            st.session_state.preview_thread = thread
+            st.session_state.preview_key = current_key
             st.session_state.pop("save_result", None)
         except Exception as error:
             st.error(f"Archive 분석 실패: {error}")
@@ -207,21 +283,27 @@ def main() -> None:
     render_record(result, active_repository)
 
     ambiguous = result.result_status == "additional_confirmation_required"
+    already_saved = result.result_status == "saved"
     if ambiguous:
         st.caption("후보 Record 확인 전에는 저장할 수 없습니다.")
 
     if st.button(
         "Save Archive",
-        disabled=ambiguous,
+        disabled=ambiguous or already_saved,
         type="primary",
         key="save_archive",
         help="클릭은 표시된 Archive Preview의 명시적 Excel write 승인으로 처리됩니다.",
     ):
         try:
-            thread, service = fixture_service(selection)
+            thread = st.session_state.preview_thread
+            service = ArchiveService(
+                FixtureArchiveAnalyzer(result.thread_analysis),
+                repository(),
+            )
             saved = service.process(thread, write=True)
             st.session_state.archive_result = saved
             st.session_state.save_result = saved
+            st.rerun()
         except Exception as error:
             st.error(f"Archive 저장 실패: {error}")
 
@@ -232,6 +314,13 @@ def main() -> None:
             f"Record ID {saved.storage.saved_record_id}"
         )
         st.caption(f"Workbook: {saved.storage.destination}")
+
+
+def _gmail_label(message: dict[str, Any]) -> str:
+    subject = message.get("subject") or "(제목 없음)"
+    sender = message.get("sender") or "unknown sender"
+    received_at = message.get("received_at") or "unknown date"
+    return f"{subject} · {sender} · {received_at}"
 
 
 if __name__ == "__main__":
