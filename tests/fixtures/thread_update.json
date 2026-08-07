@@ -1,0 +1,41 @@
+{
+  "thread_id": "thread-project-blue",
+  "source_type": "test_fixture",
+  "messages": [
+    {
+      "message_id": "msg-002",
+      "thread_id": "thread-project-blue",
+      "subject": "Re: Project Blue 견적 검토",
+      "sender": "owner@example.com",
+      "recipients": ["requester@example.com"],
+      "cc": ["finance@example.com"],
+      "sent_at": "2026-08-08T13:00:00+09:00",
+      "body_text": "검토 기한을 8월 15일로 변경합니다.",
+      "attachments": [],
+      "reference_ids": ["REF-BLUE-001"]
+    },
+    {
+      "message_id": "msg-001",
+      "thread_id": "thread-project-blue",
+      "subject": "Project Blue 견적 검토",
+      "sender": "requester@example.com",
+      "recipients": ["owner@example.com"],
+      "cc": ["finance@example.com"],
+      "sent_at": "2026-08-07T09:00:00+09:00",
+      "body_text": "견적을 검토하고 8월 10일까지 의견을 주세요.",
+      "attachments": [
+        {
+          "attachment_id": "att-001",
+          "file_name": "quote.pdf",
+          "file_type": "pdf",
+          "mime_type": "application/pdf",
+          "access_status": "unverified",
+          "summary": "unknown",
+          "extracted_text": "unknown",
+          "source_message_id": "msg-001"
+        }
+      ],
+      "reference_ids": ["REF-BLUE-001"]
+    }
+  ]
+}

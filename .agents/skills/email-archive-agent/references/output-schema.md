@@ -157,4 +157,4 @@ excel_output:
   source_email_rows: []
 ```
 
-실제 시트명, 셀 구분자, ID 생성 규칙은 저장 계층이 정한다. 이 Skill은 임의의 Python/openpyxl 코드나 Excel 파일을 생성하지 않는다.
+실제 시트명, 셀 구분자, ID 생성 규칙은 저장 계층이 정한다. MCP 저장을 우선하되, MCP가 없고 사용자가 명시적으로 승인하면 repository에서 관리하는 지정된 `.xlsx` 저장 계층을 사용할 수 있다.

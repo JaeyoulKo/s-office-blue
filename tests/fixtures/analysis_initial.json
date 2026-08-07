@@ -1,0 +1,59 @@
+{
+  "subject": "Project Blue 견적 검토",
+  "senders": ["requester@example.com"],
+  "recipients": ["owner@example.com", "finance@example.com"],
+  "email_dates": ["2026-08-07T09:00:00+09:00"],
+  "requester": "requester@example.com",
+  "participants": ["requester@example.com", "owner@example.com", "finance@example.com"],
+  "start_date": "2026-08-07T09:00:00+09:00",
+  "latest_update_date": "2026-08-07T09:00:00+09:00",
+  "initial_request": "Project Blue 견적 검토",
+  "chronological_events": [
+    {
+      "event_date": "2026-08-07T09:00:00+09:00",
+      "event_type": "request",
+      "summary": "견적 검토 요청",
+      "source_message_id": "msg-001"
+    }
+  ],
+  "key_discussions": ["견적 검토"],
+  "thread_summary": "Project Blue 견적을 검토 중이다.",
+  "key_points": ["견적 검토 필요"],
+  "decisions": [],
+  "open_items": ["검토 의견 회신"],
+  "action_items": [
+    {
+      "action_id_candidate": "action-review",
+      "description": "견적 검토 의견 회신",
+      "owner": "owner@example.com",
+      "due_date": "2026-08-10",
+      "status": "open",
+      "source_message_id": "msg-001"
+    }
+  ],
+  "important_numbers": [
+    {
+      "label": "견적 금액",
+      "value": "1000000",
+      "unit_or_currency": "KRW",
+      "period": "unknown",
+      "source_message_id": "msg-001"
+    }
+  ],
+  "attachments": [
+    {
+      "attachment_id": "att-001",
+      "file_name": "quote.pdf",
+      "file_type": "pdf",
+      "mime_type": "application/pdf",
+      "access_status": "unverified",
+      "summary": "unknown",
+      "extracted_text": "unknown",
+      "source_message_id": "msg-001"
+    }
+  ],
+  "changes_in_thread": [],
+  "current_status": "open",
+  "conflicts": [],
+  "limitations": ["첨부파일 내용 미확인"]
+}

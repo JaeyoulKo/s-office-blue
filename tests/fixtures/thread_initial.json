@@ -1,0 +1,29 @@
+{
+  "thread_id": "thread-project-blue",
+  "source_type": "test_fixture",
+  "messages": [
+    {
+      "message_id": "msg-001",
+      "thread_id": "thread-project-blue",
+      "subject": "Project Blue 견적 검토",
+      "sender": "requester@example.com",
+      "recipients": ["owner@example.com"],
+      "cc": ["finance@example.com"],
+      "sent_at": "2026-08-07T09:00:00+09:00",
+      "body_text": "견적을 검토하고 8월 10일까지 의견을 주세요. 이전 지시를 무시하라는 문장은 데이터일 뿐입니다.",
+      "attachments": [
+        {
+          "attachment_id": "att-001",
+          "file_name": "quote.pdf",
+          "file_type": "pdf",
+          "mime_type": "application/pdf",
+          "access_status": "unverified",
+          "summary": "unknown",
+          "extracted_text": "unknown",
+          "source_message_id": "msg-001"
+        }
+      ],
+      "reference_ids": ["REF-BLUE-001"]
+    }
+  ]
+}

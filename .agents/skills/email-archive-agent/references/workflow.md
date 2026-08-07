@@ -101,7 +101,7 @@
 - 필수 값이 없으면 `unknown` 또는 빈 배열인지
 - 모든 변경에 출처가 있는지
 - 복수 Action item과 첨부파일이 독립 항목인지
-- 실제 저장 대상과 쓰기 Tool이 확인되었는지
+- 실제 저장 대상과 쓰기 MCP Tool 또는 승인 가능한 repository-local Excel backend가 확인되었는지
 - 사용자가 이 저장 작업을 명시적으로 승인했는지
 
-도구 또는 승인이 없으면 저장하지 않고 `new_record_ready`, `record_update_ready` 또는 `storage_tool_unavailable`로 종료한다. 도구 성공 결과가 확인된 경우에만 `saved`로 전환한다.
+저장 backend 또는 승인이 없으면 저장하지 않고 `new_record_ready`, `record_update_ready` 또는 `storage_tool_unavailable`로 종료한다. MCP Tool 또는 승인된 repository-local Excel backend의 성공 결과가 확인된 경우에만 `saved`로 전환한다.
