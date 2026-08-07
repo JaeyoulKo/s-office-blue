@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from office_blue.models import EmailMessage  # noqa: E402
+from office_blue.codex_gmail_bridge import fetch_gmail_snapshot  # noqa: E402
 from office_blue.gmail_adapter import message_from_gmail_mcp  # noqa: E402
 from office_blue.reviewer import review_email  # noqa: E402
 
@@ -18,8 +19,34 @@ st.set_page_config(page_title="Office Blue", page_icon="✉️", layout="wide")
 st.title("Ariba 이메일 보완 검토")
 st.caption("구매 이메일의 미비 항목을 찾고 사용자 검토용 답장 초안을 만듭니다.")
 
-uploaded = st.file_uploader("Gmail MCP 메시지 JSON 가져오기", type="json")
+with st.expander("Gmail MCP 받은편지함", expanded=True):
+    gmail_query = st.text_input(
+        "Gmail 검색어",
+        value="in:inbox is:unread newer_than:7d (Ariba OR 구매 OR 승인 OR purchase OR approval)",
+    )
+    if st.button("Gmail 새로고침"):
+        with st.spinner("Gmail MCP에서 메일을 읽고 있습니다..."):
+            try:
+                st.session_state.gmail_messages = fetch_gmail_snapshot(gmail_query)
+            except (ValueError, RuntimeError) as exc:
+                st.error(str(exc))
+            else:
+                st.success(f"{len(st.session_state.gmail_messages)}개 메일을 불러왔습니다.")
+
+gmail_messages = st.session_state.get("gmail_messages", [])
 imported = None
+if gmail_messages:
+    selected_index = st.selectbox(
+        "검토할 Gmail 메시지",
+        range(len(gmail_messages)),
+        format_func=lambda index: gmail_messages[index].get("subject") or "(제목 없음)",
+    )
+    try:
+        imported = message_from_gmail_mcp(gmail_messages[selected_index])
+    except (ValueError, TypeError) as exc:
+        st.error(f"Gmail MCP 메시지를 변환할 수 없습니다: {exc}")
+
+uploaded = st.file_uploader("Gmail MCP 메시지 JSON 가져오기", type="json")
 if uploaded is not None:
     try:
         imported = message_from_gmail_mcp(json.load(uploaded))

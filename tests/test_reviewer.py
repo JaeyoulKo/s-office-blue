@@ -2,6 +2,7 @@ import unittest
 
 from office_blue.models import EmailMessage
 from office_blue.gmail_adapter import message_from_gmail_mcp
+from office_blue.codex_gmail_bridge import fetch_gmail_snapshot
 from office_blue.reviewer import review_email
 
 
@@ -17,6 +18,10 @@ def email(subject: str, body: str) -> EmailMessage:
 
 
 class ReviewEmailTests(unittest.TestCase):
+    def test_gmail_bridge_rejects_empty_query(self) -> None:
+        with self.assertRaises(ValueError):
+            fetch_gmail_snapshot("  ")
+
     def test_gmail_mcp_message_is_normalized(self) -> None:
         message = message_from_gmail_mcp(
             {
