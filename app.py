@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from office_blue.models import EmailMessage  # noqa: E402
+from office_blue.gmail_adapter import message_from_gmail_mcp  # noqa: E402
 from office_blue.reviewer import review_email  # noqa: E402
 
 
@@ -16,16 +18,26 @@ st.set_page_config(page_title="Office Blue", page_icon="✉️", layout="wide")
 st.title("Ariba 이메일 보완 검토")
 st.caption("구매 이메일의 미비 항목을 찾고 사용자 검토용 답장 초안을 만듭니다.")
 
+uploaded = st.file_uploader("Gmail MCP 메시지 JSON 가져오기", type="json")
+imported = None
+if uploaded is not None:
+    try:
+        imported = message_from_gmail_mcp(json.load(uploaded))
+        st.success("Gmail MCP 메시지를 불러왔습니다.")
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        st.error(f"Gmail MCP 메시지를 불러올 수 없습니다: {exc}")
+
 with st.form("email_review"):
     left, right = st.columns(2)
     with left:
-        sender = st.text_input("발신자", placeholder="requester@example.com")
-        subject = st.text_input("제목", placeholder="노트북 구매 요청")
+        sender = st.text_input("발신자", value=imported.sender if imported else "", placeholder="requester@example.com")
+        subject = st.text_input("제목", value=imported.subject if imported else "", placeholder="노트북 구매 요청")
     with right:
-        message_id = st.text_input("Gmail 메시지 ID", value="manual-input")
-        thread_id = st.text_input("Gmail 스레드 ID", value="manual-thread")
+        message_id = st.text_input("Gmail 메시지 ID", value=imported.message_id if imported else "manual-input")
+        thread_id = st.text_input("Gmail 스레드 ID", value=imported.thread_id if imported else "manual-thread")
     body = st.text_area(
         "이메일 본문",
+        value=imported.body if imported else "",
         height=260,
         placeholder="품목: 개발용 노트북\n목적: 신규 입사자 업무용\n수량: 3개",
     )

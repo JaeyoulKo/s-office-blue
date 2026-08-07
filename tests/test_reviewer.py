@@ -1,6 +1,7 @@
 import unittest
 
 from office_blue.models import EmailMessage
+from office_blue.gmail_adapter import message_from_gmail_mcp
 from office_blue.reviewer import review_email
 
 
@@ -16,6 +17,20 @@ def email(subject: str, body: str) -> EmailMessage:
 
 
 class ReviewEmailTests(unittest.TestCase):
+    def test_gmail_mcp_message_is_normalized(self) -> None:
+        message = message_from_gmail_mcp(
+            {
+                "id": "gmail-1",
+                "threadId": "thread-1",
+                "from": "requester@example.com",
+                "to": "buyer@example.com",
+                "subject": "구매 요청",
+                "body_text": "품목: 노트북",
+            }
+        )
+        self.assertEqual(message.message_id, "gmail-1")
+        self.assertEqual(message.recipients, ["buyer@example.com"])
+
     def test_missing_supplier_and_amount_creates_draft(self) -> None:
         result = review_email(
             email(
@@ -55,4 +70,3 @@ class ReviewEmailTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
