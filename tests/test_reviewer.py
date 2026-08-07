@@ -3,6 +3,7 @@ import unittest
 from office_blue.models import EmailMessage
 from office_blue.gmail_adapter import message_from_gmail_mcp
 from office_blue.codex_gmail_bridge import fetch_gmail_snapshot
+from office_blue.ariba_sample_adapter import is_ariba_sample_list, message_from_ariba_sample
 from office_blue.reviewer import review_email
 
 
@@ -18,6 +19,27 @@ def email(subject: str, body: str) -> EmailMessage:
 
 
 class ReviewEmailTests(unittest.TestCase):
+    def test_ariba_sample_is_normalized(self) -> None:
+        sample = {
+            "id": 21,
+            "pr_number": "PR33011",
+            "type": "Opex",
+            "email_subject": "Action required: Approve PR33011",
+            "requester": "홍길동",
+            "vendor": "Blue Co",
+            "total_amount": "10,000,000 KRW",
+            "description": "업무용 소프트웨어 구매",
+            "recent_comments": "검토 요청",
+            "cost_breakdown": {"has_data": False, "details": ""},
+            "expected_effects": {"has_data": True, "details": "업무시간 단축"},
+        }
+        self.assertTrue(is_ariba_sample_list([sample]))
+        message = message_from_ariba_sample(sample)
+        self.assertEqual(message.thread_id, "ariba-PR33011")
+        self.assertIn("비용 산출 근거: unknown", message.body)
+        result = review_email(message)
+        self.assertIn("cost_breakdown", {item.field for item in result.missing_fields})
+
     def test_gmail_bridge_rejects_empty_query(self) -> None:
         with self.assertRaises(ValueError):
             fetch_gmail_snapshot("  ")

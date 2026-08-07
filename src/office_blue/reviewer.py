@@ -49,7 +49,14 @@ QUESTIONS: dict[str, str] = {
     "requester": "요청자 이름과 담당 부서를 알려주시겠어요?",
     "contract_subject": "계약 대상 제품 또는 서비스와 주요 범위를 알려주시겠어요?",
     "contract_period": "계약 시작일과 종료일을 알려주시겠어요?",
+    "cost_breakdown": "총금액을 구성하는 단가·수량·기간 등 비용 산출 근거를 알려주시겠어요?",
+    "expected_effects": "구매로 기대하는 정량적 또는 정성적 효과와 근거를 알려주시겠어요?",
 }
+
+EXPLICIT_UNKNOWN_FIELDS: tuple[tuple[str, str, str], ...] = (
+    ("비용 산출 근거: unknown", "cost_breakdown", "비용 산출 근거가 없어 금액 구성을 검토할 수 없습니다."),
+    ("기대효과: unknown", "expected_effects", "기대효과가 없어 구매 필요성과 효과를 검토할 수 없습니다."),
+)
 
 
 def _contains(text: str, signals: tuple[str, ...]) -> bool:
@@ -119,6 +126,9 @@ def review_email(message: EmailMessage) -> ReviewResult:
         for field, reason, _ in rules
         if field not in facts
     ]
+    for marker, field, reason in EXPLICIT_UNKNOWN_FIELDS:
+        if marker in text and all(item.field != field for item in missing):
+            missing.append(MissingField(field=field, reason=reason, question=QUESTIONS[field]))
     if missing:
         return ReviewResult(
             message_id=message.message_id,
@@ -144,4 +154,3 @@ def review_email(message: EmailMessage) -> ReviewResult:
         needs_user_confirmation=[],
         reply_draft=None,
     )
-

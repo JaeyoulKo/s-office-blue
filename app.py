@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from office_blue.models import EmailMessage  # noqa: E402
+from office_blue.ariba_sample_adapter import is_ariba_sample_list, message_from_ariba_sample  # noqa: E402
 from office_blue.codex_gmail_bridge import fetch_gmail_snapshot  # noqa: E402
 from office_blue.gmail_adapter import message_from_gmail_mcp  # noqa: E402
 from office_blue.reviewer import review_email  # noqa: E402
@@ -49,10 +50,25 @@ if gmail_messages:
 uploaded = st.file_uploader("Gmail MCP 메시지 JSON 가져오기", type="json")
 if uploaded is not None:
     try:
-        imported = message_from_gmail_mcp(json.load(uploaded))
-        st.success("Gmail MCP 메시지를 불러왔습니다.")
+        uploaded_data = json.load(uploaded)
+        if is_ariba_sample_list(uploaded_data):
+            sample_index = st.selectbox(
+                "검토할 Ariba 샘플",
+                range(len(uploaded_data)),
+                format_func=lambda index: (
+                    f"{uploaded_data[index].get('pr_number')} · "
+                    f"{uploaded_data[index].get('email_subject', '(제목 없음)')}"
+                ),
+            )
+            imported = message_from_ariba_sample(uploaded_data[sample_index])
+            st.success(f"Ariba 샘플 {len(uploaded_data)}건을 불러왔습니다.")
+        elif isinstance(uploaded_data, dict):
+            imported = message_from_gmail_mcp(uploaded_data)
+            st.success("Gmail MCP 메시지를 불러왔습니다.")
+        else:
+            raise ValueError("지원하지 않는 JSON 구조입니다.")
     except (ValueError, TypeError, json.JSONDecodeError) as exc:
-        st.error(f"Gmail MCP 메시지를 불러올 수 없습니다: {exc}")
+        st.error(f"JSON 메시지를 불러올 수 없습니다: {exc}")
 
 with st.form("email_review"):
     left, right = st.columns(2)
