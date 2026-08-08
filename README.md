@@ -28,7 +28,17 @@ python -m experiments.ablation --arms A0,A3 --reps 1  # 몇 분 걸린다
 streamlit run ui/app.py                               # 눈으로 확인
 ```
 
-결과는 `experiments/runs/<run-id>/report.md`에 쌓인다.
+결과는 `experiments/runs/<run-id>/report.md`에 생기고, 남길 결론은
+[`experiments/results-log.md`](experiments/results-log.md)에 쌓는다.
+
+첫 측정 결과 (20건 × 3회, 정답 라벨 대비 정확도):
+
+| `A0` 스킬 없음 | `A1` +분류 | `A2` +우선순위 | `A3` +브리핑 |
+| --- | --- | --- | --- |
+| 0.933 | 0.983 | **1.000** | 0.950 |
+
+스킬을 얹을수록 좋아지다가 **마지막에 떨어졌다.** "많이 붙일수록 좋다"는 직관은 틀렸고,
+붙일 때마다 재야 한다는 것 — 그게 이 하니스를 만든 이유다.
 
 ## 구조 — 두 트랙
 

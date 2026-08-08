@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -145,16 +146,21 @@ def write_report(run_dir: Path, payload: dict) -> Path:
         cells = [_fmt(payload["summary"][a].get(key)) for a in arms]
         lines.append(f"| {title} | " + " | ".join(cells) + " |")
 
-    lines += ["", "## 틀린 분류", ""]
+    # 반복 실행이라 같은 오답이 여러 번 나온다. 그대로 나열하면 읽히지 않으므로
+    # (메일, 정답, 답변)으로 묶고 몇 번 중 몇 번 틀렸는지로 보여준다.
+    lines += ["", "## 틀린 분류", "", f"(arm당 {payload['reps']}회 실행 기준)", ""]
     for arm in arms:
-        wrong = [w for s in payload["details"][arm] for w in s["wrong"]]
-        if not wrong:
+        tally = Counter(
+            (w["message_id"], w["expected"], w["got"])
+            for s in payload["details"][arm] for w in s["wrong"]
+        )
+        if not tally:
             lines.append(f"- `{arm}`: 없음")
             continue
         lines.append(f"- `{arm}`:")
-        for item in wrong[:10]:
+        for (mid, expected, got), n in tally.most_common(10):
             lines.append(
-                f"  - `{item['message_id']}` — 정답 `{item['expected']}` / 답변 `{item['got']}`"
+                f"  - `{mid}` 정답 `{expected}` → 답변 `{got}` ({n}/{payload['reps']}회)"
             )
 
     halluc = {
