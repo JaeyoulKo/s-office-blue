@@ -26,10 +26,10 @@
 
 ## 시작하기 전에
 
-[`docs/setup.md`](setup.md)를 끝까지 따라 하고 이게 통과해야 한다.
+[`docs/setup.md`](setup.md)를 끝까지 따라 하고 이 셋이 통과해야 한다.
 
 ```powershell
-pytest -q                                            # 26 passed
+pytest -q                                            # 전부 통과해야 한다
 python -m experiments.seed_gmail --mode fixture
 python -m experiments.ablation --arms A0,A3 --reps 1  # report.md 가 생긴다
 ```

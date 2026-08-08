@@ -58,7 +58,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 **검증** — 프롬프트 앞에 `(.venv)`가 붙어 있어야 한다.
 
 ```powershell
-pytest -q               # 23 passed 가 나와야 한다
+pytest -q               # 전부 통과해야 한다 (failed 가 0)
 ```
 
 > 이후 새 터미널을 열 때마다 `.\.venv\Scripts\Activate.ps1`를 먼저 실행한다.

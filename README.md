@@ -22,7 +22,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[ui,dev]"
 
-pytest -q                                             # 26 passed
+pytest -q                                             # 전부 통과해야 한다
 python -m experiments.seed_gmail --mode fixture       # 실험용 메일 20건
 python -m experiments.ablation --arms A0,A3 --reps 1  # 몇 분 걸린다
 streamlit run ui/app.py                               # 눈으로 확인
