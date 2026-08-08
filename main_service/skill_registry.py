@@ -7,16 +7,16 @@ SKILLS_ROOT = PROJECT_ROOT / "skills"
 SKILLS = {
     "email-classifier": SKILLS_ROOT / "email-classifier",
     "purchase-email-review": SKILLS_ROOT / "purchase-email-review",
-    "clarification-draft": SKILLS_ROOT / "clarification-draft",
+    "discussion-email-review": SKILLS_ROOT / "discussion-email-review",
 }
 
 
 def resolve_skill(name: str) -> Path:
-    """Return an approved Skill folder and reject unknown names."""
+    """승인된 Skill 폴더를 반환하고 알 수 없는 이름은 거부한다."""
     try:
         path = SKILLS[name]
     except KeyError as exc:
-        raise ValueError(f"Unknown Skill: {name}") from exc
+        raise ValueError(f"알 수 없는 Skill: {name}") from exc
     if not (path / "SKILL.md").is_file():
-        raise FileNotFoundError(f"Missing Skill: {path}")
+        raise FileNotFoundError(f"Skill 파일이 없습니다: {path}")
     return path
