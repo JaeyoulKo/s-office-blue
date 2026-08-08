@@ -1,0 +1,23 @@
+[project]
+name = "office-blue"
+version = "0.1.0"
+description = "메일 분류·브리핑 Codex 스킬 하니스와 ablation 실험 환경"
+requires-python = ">=3.10"
+dependencies = [
+    "jsonschema>=4.22,<5",
+    "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+ui = ["streamlit>=1.37,<2"]
+dev = ["pytest>=8,<9"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["harness"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

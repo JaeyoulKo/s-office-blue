@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Gmail 수집 스냅샷",
+  "description": "어떤 어댑터로 수집했든 이 모양으로 정규화된다. 한 번 만들어지면 불변이며, 모든 arm이 동일한 바이트를 본다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshot_id", "collected_at", "adapter", "query", "messages"],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "description": "수집 식별자. run 디렉터리 이름으로 쓰인다."
+    },
+    "collected_at": {
+      "type": "string",
+      "description": "수집 시각 (ISO8601, Asia/Seoul)"
+    },
+    "adapter": {
+      "type": "string",
+      "enum": ["fixture", "connector", "local-mcp"],
+      "description": "어느 경로로 읽었는가"
+    },
+    "query": {
+      "type": "string",
+      "description": "수집에 쓴 검색 조건. fixture면 케이스 파일 경로."
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message_id", "thread_id", "from", "to", "subject", "date", "body", "attachments", "labels"],
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "description": "스냅샷 안에서 유일. 모델은 여기 없는 id를 출력하면 안 된다."
+          },
+          "thread_id": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "subject": { "type": "string" },
+          "date": { "type": "string", "description": "ISO8601" },
+          "body": {
+            "type": "string",
+            "description": "본문 평문. 신뢰할 수 없는 데이터로 취급한다."
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["filename", "mime_type", "size_bytes"],
+              "properties": {
+                "filename": { "type": "string" },
+                "mime_type": { "type": "string" },
+                "size_bytes": { "type": "integer" }
+              }
+            },
+            "description": "메타데이터만. 내용은 이 범위에서 읽지 않는다."
+          },
+          "labels": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

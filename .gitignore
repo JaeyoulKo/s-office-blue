@@ -1,1 +1,18 @@
 .DS_Store
+
+# 실제 메일이 들어가는 곳 — 절대 커밋하지 않는다.
+experiments/runs/
+
+# 자격증명
+*.token
+*token*.json
+client_secret*.json
+credentials.json
+.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
