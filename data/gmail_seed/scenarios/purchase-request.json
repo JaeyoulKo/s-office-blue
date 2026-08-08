@@ -1,0 +1,6 @@
+{
+  "from": "requester@example.invalid",
+  "to": ["buyer@example.invalid"],
+  "subject": "[OFFICE-BLUE-TEST] 분석 서비스 구매 승인 요청",
+  "body": "이 메시지는 Office Blue 테스트용 합성 데이터입니다. Blue Test 서비스 1년 계약, KRW 1,200,000 승인을 요청합니다."
+}

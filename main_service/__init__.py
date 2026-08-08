@@ -1,0 +1,1 @@
+"""Office Blue service template."""
