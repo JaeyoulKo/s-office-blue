@@ -1,4 +1,5 @@
-Read input.json and classify its email with the supplied taxonomy.
+`input.json`을 읽고 제공된 국문 taxonomy에 따라 이메일을 분류하세요.
 
-Return only JSON with case_id, label, summary, evidence, missing_information,
-recommended_action, safety_flags, and errors. Do not call Gmail or change an external system.
+`case_id`, `label`, `summary`, `evidence`, `missing_information`,
+`recommended_action`, `safety_flags`, `errors` 필드가 있는 JSON만 반환하세요.
+Gmail을 호출하거나 외부 시스템을 변경하지 마세요.

@@ -13,8 +13,8 @@ def _taxonomy() -> str:
 def classify_email(email: dict[str, Any], model: str | None = None) -> CodexResult:
     return run_codex(
         prompt=(
-            "Read input.json and classify its email with the supplied taxonomy. "
-            "Return only the JSON fields required by the classification workflow."
+            "input.json의 이메일을 제공된 국문 taxonomy로 분류하고 "
+            "분류 근거와 다음 단계를 JSON으로 반환하세요."
         ),
         payload={"email": email, "taxonomy": _taxonomy()},
         skill="email-classifier",
@@ -23,14 +23,12 @@ def classify_email(email: dict[str, Any], model: str | None = None) -> CodexResu
 
 
 def review_purchase_email(
-    email: dict[str, Any],
-    classification: Any,
-    model: str | None = None,
+    email: dict[str, Any], classification: Any, model: str | None = None
 ) -> CodexResult:
     return run_codex(
         prompt=(
-            "Read input.json and review the already-classified purchase email. "
-            "Return only concise JSON and do not reclassify or take external action."
+            "input.json의 구매·승인·계약 이메일을 검토하세요. 필요한 경우 Skill의 국문 "
+            "템플릿으로 회신 초안을 포함하고 외부 작업은 하지 마세요."
         ),
         payload={"email": email, "classification": classification},
         skill="purchase-email-review",
@@ -38,13 +36,15 @@ def review_purchase_email(
     )
 
 
-def draft_clarification(review: Any, model: str | None = None) -> CodexResult:
+def review_discussion_email(
+    email: dict[str, Any], classification: Any, model: str | None = None
+) -> CodexResult:
     return run_codex(
         prompt=(
-            "Read input.json and draft an unsent clarification email using only the "
-            "explicit missing-information questions. Return only concise JSON."
+            "input.json의 논의·질의 이메일과 스레드를 검토하세요. 결정, 미결 사항, 담당자, "
+            "기한을 구분하고 필요한 경우 국문 회신 초안을 포함하세요."
         ),
-        payload={"review": review},
-        skill="clarification-draft",
+        payload={"email": email, "classification": classification},
+        skill="discussion-email-review",
         model=model,
     )
