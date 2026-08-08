@@ -1,1 +1,36 @@
+# Runtime data can contain raw Gmail content and provider identifiers.
+experiments/instances/**
+!experiments/instances/.gitkeep
+data/snapshots/**
+!data/snapshots/.gitkeep
+data/gmail_seed/outbox/**
+!data/gmail_seed/outbox/.gitkeep
+artifacts/**
+
+# Local credentials and environment configuration.
+.env
+.env.*
+!.env.example
+*.token
+*.credentials.json
+credentials.json
+token.json
+
+# Python and test output.
+.venv/
+venv/
+.test-deps/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Editors and operating systems.
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/

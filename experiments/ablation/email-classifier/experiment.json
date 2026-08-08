@@ -1,0 +1,9 @@
+{
+  "name": "email-classifier-ablation",
+  "data_source": "local_synthetic",
+  "treatment_skill": "email-classifier",
+  "cases": [
+    "data/synthetic/emails/purchase-request.json",
+    "data/synthetic/emails/maintenance-notice.json"
+  ]
+}

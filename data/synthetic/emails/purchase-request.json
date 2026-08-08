@@ -1,0 +1,8 @@
+{
+  "case_id": "synthetic-purchase-001",
+  "sender": "requester@example.invalid",
+  "recipients": ["buyer@example.invalid"],
+  "subject": "분석 서비스 구매 승인 요청",
+  "body": "합성 공급사 Blue Test의 분석 서비스 1년 계약, KRW 1,200,000 승인을 요청합니다. 납품 시작일은 아직 정하지 않았습니다.",
+  "attachments": []
+}

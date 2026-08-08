@@ -1,0 +1,8 @@
+{
+  "case_id": "synthetic-notice-001",
+  "sender": "notice@example.invalid",
+  "recipients": ["team@example.invalid"],
+  "subject": "구매 시스템 점검 공지",
+  "body": "금요일 20시부터 21시까지 점검 예정이며 별도 회신은 필요하지 않습니다.",
+  "attachments": []
+}
