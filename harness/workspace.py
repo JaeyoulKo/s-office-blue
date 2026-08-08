@@ -92,7 +92,19 @@ def build(dest: Path, snapshot: dict, skills: list[str]) -> dict:
         prompt += SKILL_PROMPT.format(skill_list=listing)
 
     (dest / "prompt.md").write_text(prompt, encoding="utf-8")
+    return describe(dest, skills)
 
+
+def describe(dest: Path, skills: list[str] | None = None) -> dict:
+    """이미 만들어진 작업공간의 지문. 반복 실행 때 build()를 다시 하지 않고 이걸 쓴다.
+
+    build()와 같은 모양을 돌려주므로 rep-1과 rep-2의 기록이 어긋나지 않는다.
+    """
+    prompt = (dest / "prompt.md").read_text(encoding="utf-8")
+    snapshot_text = (dest / "snapshot.json").read_text(encoding="utf-8-sig")
+    if skills is None:
+        skill_dir = dest / "skills"
+        skills = sorted(p.name for p in skill_dir.iterdir()) if skill_dir.is_dir() else []
     return {
         "path": str(dest),
         "skills": list(skills),

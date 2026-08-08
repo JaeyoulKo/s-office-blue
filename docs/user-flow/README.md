@@ -16,58 +16,70 @@
 
 ```mermaid
 flowchart TD
-    HOME[시작 화면]:::screen --> CLICK[메일 브리핑 버튼 클릭<br/>기간·안읽음·최대 50건]:::action
-    CLICK --> CLASSIFY{AI 분석<br/>메일 유형 분류}:::decision
+    HOME[시작 화면] --> CLICK[메일 브리핑 버튼 클릭<br/>기간 · 안읽음 · 최대 50건]
+    CLICK --> CLASSIFY{AI 분석<br/>메일 유형 분류}
 
-    CLASSIFY -->|중요 키워드·발신인| IMP[사용자 확인<br/>중요 이메일]:::state
-    CLASSIFY -->|승인 요청·Ariba| ARIBA[구매 승인 요청<br/>이메일 Ariba]:::state
-    CLASSIFY -->|문의·논의·견적| DISC[논의 이메일]:::state
-    CLASSIFY -->|요구 행위 없음| NOTI[공지/안내 메일]:::state
+    CLASSIFY -->|중요 키워드 · 발신인| IMP[사용자 확인<br/>중요 이메일]
+    CLASSIFY -->|승인 요청 · Ariba| ARIBA[구매 승인 요청<br/>이메일 Ariba]
+    CLASSIFY -->|문의 · 논의 · 견적| DISC[논의 이메일]
+    CLASSIFY -->|요구 행위 없음| NOTI[공지 / 안내 메일]
 
-    IMP --> IDELIV[카운트 및<br/>제목·링크 전달]:::action --> IEND[Done]:::terminal
-    NOTI --> NEND[Done]:::terminal
+    IMP --> IDELIV[카운트 및<br/>제목 · 링크 전달]
+    IDELIV --> IEND[Done]
+    NOTI --> NEND[Done]
 
-    ARIBA --> G1{지출결의서<br/>구성항목 확인}:::decision
-    G1 -->|No| D1[보완 요청<br/>이메일 작성]:::action
-    G1 -->|Yes| G2{정량적<br/>기대효과 확인}:::decision
-    G2 -->|No| D2[보완 요청<br/>초안 작성]:::action
-    G2 -->|Yes| G3{이전 유사 계약<br/>비교 검토}:::open
-    D1 --> APPR[사용자 승인]:::action
+    ARIBA --> G1{지출결의서<br/>구성항목 확인}
+    G1 -->|No| D1[보완 요청<br/>이메일 작성]
+    G1 -->|Yes| G2{정량적<br/>기대효과 확인}
+    G2 -->|No| D2[보완 요청<br/>초안 작성]
+    G2 -->|Yes| G3{이전 유사 계약<br/>비교 검토}
+    D1 --> APPR[사용자 승인]
     D2 --> APPR
-    APPR --> SENT[메일 발송]:::open
-    G3 --> DB[과거 계약 DB 서치<br/>이전 계약 비교 분석]:::action
-    DB --> ABRIEF[검토 결과<br/>브리핑 포맷 요약]:::action
+    APPR --> SENT[메일 발송]
+    G3 --> DB[과거 계약 DB 서치<br/>이전 계약 비교 분석]
+    DB --> ABRIEF[검토 결과<br/>브리핑 포맷 요약]
     APPR --> ABRIEF
-    ABRIEF --> AGG{Ariba 결과 취합}:::decision
-    AGG --> LIST[탭에 리스트화면]:::state --> HBTN[과거 데이터와<br/>분석 버튼 클릭]:::action --> HSCR[과거 데이터<br/>비교 분석 화면]:::screen
+    ABRIEF --> AGG{Ariba 결과 취합}
+    AGG --> LIST[탭에 리스트화면]
+    LIST --> HBTN[과거 데이터와<br/>분석 버튼 클릭]
+    HBTN --> HSCR[과거 데이터<br/>비교 분석 화면]
 
-    DISC --> ARCH{아카이빙이<br/>필요한가?}:::decision
-    ARCH -->|Yes| ATT{첨부파일 존재?}:::decision
-    ATT -->|No| BODY[메일 본문만 분석]:::action
-    ATT -->|Yes| WATT["+첨부파일 분석"]:::action
-    BODY --> TSUM[LLM 기반<br/>thread 요약]:::action
+    DISC --> ARCH{아카이빙이<br/>필요한가?}
+    ARCH -->|Yes| ATT{첨부파일 존재?}
+    ATT -->|No| BODY[메일 본문만 분석]
+    ATT -->|Yes| WATT["+첨부파일 분석"]
+    BODY --> TSUM[LLM 기반<br/>thread 요약]
     WATT --> TSUM
-    TSUM --> PREC{과거 저장내역 유무}:::decision
-    PREC -->|있음| REXIST[기존 레코드 분석<br/>변경 기록 후 추가 등록]:::state
-    PREC -->|없음| RNEW[신규 레코드 생성]:::state
-    REXIST --> XLS[Excel 저장]:::action
+    TSUM --> PREC{과거 저장내역 유무}
+    PREC -->|있음| REXIST[기존 레코드 분석<br/>변경 기록 후 추가 등록]
+    PREC -->|없음| RNEW[신규 레코드 생성]
+    REXIST --> XLS[Excel 저장]
     RNEW --> XLS
-    XLS --> SEND2[저장 완료 메시지]:::terminal
-    DISC --> HCMP{과거 내역 비교?}:::open --> RES[결과 화면]:::state
+    XLS --> SAVED[저장 완료 메시지]
+    DISC --> HCMP{과거 내역 비교?}
+    HCMP --> RES[결과 화면]
 
-    AGG --> DONE{메일 분석 완료}:::decision
+    AGG --> DONE{메일 분석 완료}
     IDELIV -.-> DONE
     NOTI -.-> DONE
-    DONE --> BGEN[메일 브리핑 생성]:::action
-    BGEN --> CNT[종류별 갯수 카운트<br/>우선순위 판별 및 요약]:::action
-    CNT --> BSCR[브리핑 화면]:::screen --> BEND[Done]:::terminal
+    DONE --> BGEN[메일 브리핑 생성]
+    BGEN --> CNT[종류별 갯수 카운트<br/>우선순위 판별 및 요약]
+    CNT --> BSCR[브리핑 화면]
+    BSCR --> BEND[Done]
 
-    classDef screen fill:#4b3fcf,color:#fff,stroke:#3a30a8
+    classDef screen fill:#4b3fcf,color:#ffffff,stroke:#3a30a8
     classDef state fill:#c9c0ff,color:#1a1a2e,stroke:#a99cf0
     classDef action fill:#b9f0d0,color:#12301f,stroke:#8bd4ac
     classDef decision fill:#ffcf9e,color:#3d2410,stroke:#e5ab6d
     classDef terminal fill:#ffc2c2,color:#3d1010,stroke:#e58c8c
-    classDef open fill:#ffcf9e,color:#3d2410,stroke:#ff6b00,stroke-width:3px,stroke-dasharray:5 3
+    classDef open fill:#ffe0b8,color:#3d2410,stroke:#ff6b00,stroke-width:3px
+
+    class HOME,HSCR,BSCR screen
+    class IMP,ARIBA,DISC,NOTI,LIST,REXIST,RNEW,RES state
+    class CLICK,IDELIV,D1,D2,APPR,DB,ABRIEF,HBTN,BODY,WATT,TSUM,XLS,BGEN,CNT action
+    class CLASSIFY,G1,G2,AGG,ARCH,ATT,PREC,DONE decision
+    class IEND,NEND,SAVED,BEND terminal
+    class G3,HCMP,SENT open
 ```
 
 굵은 주황 점선 테두리는 **보드에 주황 별이 붙은 미해결 노드**다.

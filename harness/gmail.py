@@ -39,7 +39,8 @@ attachments(파일명·MIME·크기 메타데이터만), labels 를 수집한다
 본문을 요약하거나 편집하지 말고 원문 그대로 넣는다.
 
 최종 응답은 주어진 출력 스키마를 만족하는 JSON 객체 하나만 출력한다.
-snapshot_id 는 "{snapshot_id}", adapter 는 "{adapter}", query 는 "{query}" 로 채운다.
+snapshot_id, collected_at, adapter, query 는 아무 값이나 채워도 된다. 호출한 쪽에서
+정확한 값으로 덮어쓴다. 메일 내용만 정확히 담아라.
 """
 
 
@@ -58,7 +59,8 @@ def normalize(snapshot: dict) -> dict:
         message["body"] = _clean(message.get("body", ""))
         message.setdefault("attachments", [])
         message.setdefault("labels", [])
-        for key in ("to", "from", "thread_id"):
+        # 계약에 선택 필드가 없다. 빠진 값은 빈 문자열로 채워 스키마 검증을 통과시킨다.
+        for key in ("to", "from", "thread_id", "date"):
             message.setdefault(key, "")
     return snapshot
 
@@ -139,8 +141,17 @@ def from_gmail(
             "Gmail 수집이 결과를 내지 못했습니다. `codex mcp list`로 인증 상태를 먼저 확인하세요 "
             "(docs/setup.md 참고)."
         )
-    snapshot = json.loads(out_path.read_text(encoding="utf-8"))
+    snapshot = json.loads(out_path.read_text(encoding="utf-8-sig"))
     out_path.unlink(missing_ok=True)
+
+    # 스냅샷의 신원은 모델이 아니라 우리가 정한다. 모델이 잘못 채우면 run 디렉터리가
+    # 엉뚱한 이름으로 생기고 나중에 어떤 조건으로 수집한 건지 알 수 없게 된다.
+    snapshot.update({
+        "snapshot_id": snapshot_id,
+        "collected_at": datetime.now(KST).isoformat(),
+        "adapter": adapter,
+        "query": query,
+    })
     return normalize(snapshot)
 
 

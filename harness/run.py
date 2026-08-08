@@ -41,12 +41,10 @@ def run_arm(
     rep_dir.mkdir(parents=True, exist_ok=True)
 
     # 작업공간은 arm당 한 번만 만든다. 반복 실행은 입력이 같고 출력 경로만 다르다.
-    ws_info = workspace.build(ws_dir, snapshot, skills) if not ws_dir.exists() else {
-        "path": str(ws_dir),
-        "skills": list(skills),
-        "prompt": (ws_dir / "prompt.md").read_text(encoding="utf-8"),
-        "files": workspace.file_tree(ws_dir),
-    }
+    ws_info = (
+        workspace.describe(ws_dir, skills) if ws_dir.exists()
+        else workspace.build(ws_dir, snapshot, skills)
+    )
 
     result_path = rep_dir / "result.json"
     command = build_command(
