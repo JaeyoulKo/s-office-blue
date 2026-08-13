@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["messages"],
+  "properties": {
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message_id", "thread_id", "sender", "recipients", "subject", "body", "received_at", "attachments"],
+        "properties": {
+          "message_id": {"type": "string"},
+          "thread_id": {"type": "string"},
+          "sender": {"type": "string"},
+          "recipients": {"type": "array", "items": {"type": "string"}},
+          "subject": {"type": "string"},
+          "body": {"type": "string"},
+          "received_at": {"type": "string"},
+          "attachments": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
