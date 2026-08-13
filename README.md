@@ -39,7 +39,7 @@ UI는 `service.py`만 호출하며 runner가 선택한 Skill을 임시 `.agents/
 ## A/B 실험
 
 ```powershell
-python experiments/ablation/email-classifier/run.py
+python experiments/ablation/run.py email-classifier
 ```
 
 동일한 요청문과 입력을 baseline에는 Skill 없이, treatment에는 `email-classifier`만 둔 채

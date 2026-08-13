@@ -2,6 +2,13 @@
   "name": "email-classifier-ablation",
   "data_source": "local_synthetic",
   "treatment_skill": "email-classifier",
+  "prompt": "prompt.md",
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "input_key": "email",
+  "context": {
+    "taxonomy": "shared/taxonomy.md"
+  },
   "cases": [
     "data/synthetic/emails/purchase-request.json",
     "data/synthetic/emails/maintenance-notice.json"
