@@ -46,6 +46,7 @@ def run_codex(
     payload: dict[str, Any],
     skill: str | None,
     model: str | None = None,
+    reasoning_effort: str | None = None,
     timeout_seconds: int = 300,
 ) -> CodexResult:
     """Run Codex in an isolated workspace containing only the selected Skill."""
@@ -81,6 +82,10 @@ def run_codex(
         ]
         if model:
             command.extend(["--model", model])
+        if reasoning_effort:
+            command.extend(
+                ["--config", f'model_reasoning_effort="{reasoning_effort}"']
+            )
         command.append("-")
 
         try:
