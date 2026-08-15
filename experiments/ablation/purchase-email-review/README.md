@@ -6,6 +6,12 @@
 python experiments/ablation/run.py purchase-email-review
 ```
 
+Streamlit 비교 페이지는 다음 명령으로 실행한다.
+
+```powershell
+streamlit run experiments/ablation/purchase-email-review/streamlit_app.py --server.port 8502
+```
+
 - baseline: 대상 Skill 없음
 - treatment: `dev/02-purchase-review/work/purchase-email-review/`만 노출
 - 공통 조건: 입력, prompt, `gpt-5.4`, reasoning effort `low`
