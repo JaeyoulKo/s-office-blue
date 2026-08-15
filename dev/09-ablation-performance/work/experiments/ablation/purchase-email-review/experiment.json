@@ -6,7 +6,7 @@
   "prompt": "prompt.md",
   "model": "gpt-5.4",
   "reasoning_effort": "low",
-  "condition_timeout_seconds": 180,
+  "condition_timeout_seconds": 150,
   "input_key": "email",
   "cases": [
     "data/synthetic/emails/purchase-email-review/purchase-review-email-sample.json"
