@@ -8,6 +8,6 @@
   "reasoning_effort": "low",
   "input_key": "email",
   "cases": [
-    "data/synthetic/emails/purchase-request.json"
+    "data/synthetic/emails/purchase-email-review/purchase-review-email-sample.json"
   ]
 }
