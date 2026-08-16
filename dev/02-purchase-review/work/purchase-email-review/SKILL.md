@@ -11,7 +11,9 @@ description: Ariba 지출결의서 요약 이메일과 구매 승인 요청을 �
 1. 입력이 Ariba 지출결의서 또는 구매 승인 요청인지 확인한다.
 2. 본문, 첨부 메타데이터, 제공된 읽기 전용 조회 결과에서만 근거를 추출한다.
 3. 네 가지 필수 구성항목을 각각 판정한다.
-4. 하나라도 `MISSING` 또는 `UNCLEAR`이면 보완 요청 초안을 만든다.
+4. 하나라도 `MISSING` 또는 `UNCLEAR`이면
+   [templates/clarification-email.md](templates/clarification-email.md)를 읽고 그 형식으로
+   보완 요청 초안을 만든다.
 5. 네 항목이 모두 `SATISFIED`일 때만 승인 페이지 안내를 제공한다.
 6. 코드펜스 없이 고정 JSON 객체만 반환한다.
 

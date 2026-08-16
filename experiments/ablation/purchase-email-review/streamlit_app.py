@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
+import re
 import subprocess
 import sys
 import uuid
 from pathlib import Path
+from typing import Callable
 
+import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -62,55 +66,254 @@ def load_result(run_dir: Path, condition: str) -> object:
             text = path.read_text(encoding="utf-8")
             if filename == "error.txt":
                 return {"error": text.strip()}
+            # Older runs stored output.txt only, sometimes inside a ```json fence.
+            candidate = text.strip()
+            if candidate.startswith("```"):
+                candidate = re.sub(r"^```[A-Za-z0-9_-]*[ \t]*\r?\n?", "", candidate)
+                candidate = re.sub(r"\r?\n?```$", "", candidate).strip()
             try:
-                return json.loads(text)
+                return json.loads(candidate)
             except json.JSONDecodeError:
                 return text
     return {"error": "결과 파일이 없습니다."}
 
 
-def run_ab(email: dict[str, object]) -> Path:
+def run_ab(
+    email: dict[str, object],
+    on_event: Callable[[dict[str, object]], None] | None = None,
+) -> Path:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     case_path = UPLOAD_DIR / f"{uuid.uuid4().hex}.json"
     case_path.write_text(json.dumps(email, ensure_ascii=False), encoding="utf-8")
+    result_path: Path | None = None
+    stderr = ""
     try:
-        completed = subprocess.run(
-            [sys.executable, str(RUNNER), EXPERIMENT, "--case", str(case_path)],
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(RUNNER), EXPERIMENT, "--case", str(case_path)],
             cwd=ROOT,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=700,
-            check=False,
         )
+        for raw_line in process.stdout or ():
+            line = raw_line.strip()
+            if line.startswith("AB_EVENT "):
+                if on_event is not None:
+                    on_event(json.loads(line.removeprefix("AB_EVENT ")))
+            elif line:
+                result_path = Path(line)
+        stderr = (process.stderr.read().strip() if process.stderr else "")
+        process.wait()
     finally:
         case_path.unlink(missing_ok=True)
-    lines = completed.stdout.strip().splitlines()
-    if not lines:
-        raise RuntimeError(completed.stderr.strip() or "실험 결과를 확인할 수 없습니다.")
-    return Path(lines[-1])
+    if result_path is None:
+        raise RuntimeError(stderr or "실험 결과를 확인할 수 없습니다.")
+    return result_path
+
+
+ITEM_LABELS = {
+    "cost": "비용",
+    "quantitative_benefit": "예상 정량 효과",
+    "previous_contract_difference": "이전 계약과의 차이",
+    "basic_contract_information": "기본 계약 정보",
+}
+STATUS_LABELS = {
+    "SATISFIED": "✅ 충족",
+    "MISSING": "❌ 누락",
+    "UNCLEAR": "⚠️ 불명확",
+    "NOT_APPLICABLE": "➖ 해당 없음",
+}
+CONTRACT_KEYS = {"document_type", "review_status", "status_reason", "checks",
+                 "previous_contract_lookup", "untrusted_instructions", "reply_draft",
+                 "approval_guidance", "user_confirmation", "prohibited_actions"}
+# Rendered on their own, so the generic pass must not repeat them.
+HANDLED_KEYS = {"review_status", "status_reason", "checks", "reply_draft",
+                "reply_draft_ko", "approval_guidance", "document_type"}
+# baseline invents its own status key each run; check these in order.
+STATUS_ALIASES = ("review_status", "status", "decision", "recommended_handling",
+                  "recommended_action", "review_summary", "summary")
+
+
+def render_badge(column, label: str, value: str, tone: str = "normal", tooltip: str = "") -> None:
+    """Compact label/value pair. st.metric renders the value at ~2rem, which clips these."""
+    colors = {"ok": "#1a7f37", "warn": "#9a6700", "normal": "inherit"}
+    title = f' title="{html.escape(tooltip)}"' if tooltip else ""
+    column.markdown(
+        f'<div{title} style="line-height:1.35;margin-bottom:.25rem">'
+        f'<div style="font-size:.72rem;opacity:.65;letter-spacing:.02em">{html.escape(label)}</div>'
+        f'<div style="font-size:.95rem;font-weight:600;color:{colors.get(tone, "inherit")};'
+        f'word-break:break-word">{html.escape(value)}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def as_text(value: object) -> str:
+    """Flatten any Codex value into readable text. Evidence is sometimes a list of dicts."""
+    if value is None or value == "":
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        if "value" in value:  # e.g. {"type": "fact", "value": "..."}
+            prefix = str(value.get("type") or "").strip()
+            body = as_text(value["value"])
+            return f"[{prefix}] {body}" if prefix else body
+        return " · ".join(f"{k}: {as_text(v)}" for k, v in value.items() if v not in (None, "", [], {}))
+    if isinstance(value, (list, tuple)):
+        return "\n".join(f"• {as_text(v)}" for v in value if v not in (None, "", [], {}))
+    return str(value)
+
+
+def render_checks(checks: object) -> None:
+    """Always show the four mandatory items, so A and B stay row-comparable.
+
+    baseline has no `checks`, and that absence is the finding — render it as
+    `판정 없음` rather than hiding the table.
+    """
+    by_item: dict[str, dict] = {}
+    if isinstance(checks, list):
+        for entry in checks:
+            if isinstance(entry, dict) and entry.get("item"):
+                by_item[str(entry["item"])] = entry
+
+    rows = []
+    for key, label in ITEM_LABELS.items():
+        entry = by_item.pop(key, None)
+        if entry is None:
+            rows.append({"항목": label, "판정": "— 판정 없음", "근거": "", "보완 방향": ""})
+            continue
+        rows.append({
+            "항목": label,
+            "판정": STATUS_LABELS.get(str(entry.get("status") or ""), entry.get("status") or "-"),
+            "근거": as_text(entry.get("evidence")),
+            "보완 방향": as_text(entry.get("correction")),
+        })
+    for key, entry in by_item.items():  # items the model invented beyond the four
+        rows.append({
+            "항목": f"{key} (계약 외)",
+            "판정": STATUS_LABELS.get(str(entry.get("status") or ""), entry.get("status") or "-"),
+            "근거": as_text(entry.get("evidence")),
+            "보완 방향": as_text(entry.get("correction")),
+        })
+
+    judged = sum(1 for r in rows if r["판정"] != "— 판정 없음")
+    st.caption(f"필수 4개 항목 중 **{judged}개** 판정" if judged else "필수 4개 항목이 하나도 판정되지 않았습니다.")
+    st.dataframe(
+        pd.DataFrame(rows)[["항목", "판정"]],
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "항목": st.column_config.TextColumn(width="medium"),
+            "판정": st.column_config.TextColumn(width="small"),
+        },
+    )
+    for row in rows:
+        if not row["근거"] and not row["보완 방향"]:
+            continue
+        with st.expander(f"{row['판정']}  {row['항목']} — 근거 보기"):
+            if row["근거"]:
+                st.markdown("**근거**")
+                st.markdown(row["근거"])
+            if row["보완 방향"]:
+                st.markdown("**보완 방향**")
+                st.markdown(row["보완 방향"])
+
+
+def render_generic(data: dict) -> None:
+    """Baseline returns a different shape every run, so render whatever keys it used."""
+    for key, value in data.items():
+        if key in HANDLED_KEYS or value in (None, "", [], {}):
+            continue
+        label = key.replace("_", " ")
+        if isinstance(value, list) and value and all(isinstance(v, dict) for v in value):
+            st.markdown(f"**{label}**")
+            flat = [{k: as_text(v) for k, v in row.items()} for row in value]
+            st.dataframe(pd.DataFrame(flat), hide_index=True, use_container_width=True)
+        elif isinstance(value, dict):
+            st.markdown(f"**{label}**")
+            st.dataframe(
+                pd.DataFrame([{"항목": k, "값": as_text(v)} for k, v in value.items()]),
+                hide_index=True, use_container_width=True,
+            )
+        elif isinstance(value, list):
+            st.markdown(f"**{label}**")
+            st.markdown("\n".join(f"- {as_text(v)}" for v in value))
+        else:
+            st.markdown(f"**{label}**  \n{as_text(value)}")
+
+
+def render_draft(draft: object) -> None:
+    if isinstance(draft, dict):
+        head = [f"**받는 사람** {draft.get('to') or '-'}", f"**제목** {draft.get('subject') or '-'}"]
+        st.markdown("  \n".join(head))
+        body = as_text(draft.get("body"))
+        if body:
+            st.text_area("본문", body, height=200, disabled=True,
+                         key=f"draft_{abs(hash(body)) % 10**8}")
+    else:
+        st.markdown(as_text(draft))
 
 
 def render_result(title: str, caption: str, result: object) -> None:
     st.markdown(f"### {title}")
     st.caption(caption)
     with st.container(border=True):
-        if not isinstance(result, dict):
-            st.code(str(result), language="text")
+        if isinstance(result, dict) and "error" in result and len(result) == 1:
+            st.error(as_text(result["error"]))
             return
-        st.markdown("#### 검토 상태")
-        st.write(result.get("review_status") or result.get("status") or "상태 미지정")
+        if not isinstance(result, dict):
+            # Unparseable output still gets the three indicators, so A and B stay comparable.
+            left, right = st.columns([3, 2])
+            render_badge(left, "검토 상태", "확인 불가")
+            render_badge(right, "Skill 출력 계약", "미준수", tone="warn",
+                         tooltip="JSON 으로 파싱되지 않아 계약을 판정할 수 없습니다.")
+            st.markdown("#### 필수 항목 검토")
+            render_checks(None)
+            with st.expander("원본 출력", expanded=True):
+                st.code(str(result), language="text")
+            return
+
+        follows_contract = not (CONTRACT_KEYS - set(result))
+        # baseline names its status differently every run, so accept the usual aliases.
+        status_full = next(
+            (as_text(result[k]) for k in STATUS_ALIASES if result.get(k)),
+            "",
+        ) or "상태 미지정"
+        # baseline sometimes yields a whole sentence; metric needs a short label.
+        status = status_full.splitlines()[0].strip()
+        if len(status) > 44:
+            status = status[:43] + "…"
+        left, right = st.columns([3, 2])
+        render_badge(left, "검토 상태", status,
+                     tooltip=status_full if status_full != status else "")
+        render_badge(right, "Skill 출력 계약", "준수" if follows_contract else "미준수",
+                     tone="ok" if follows_contract else "warn",
+                     tooltip="treatment 는 Skill 이 정한 형식을 따라야 하고, baseline 은 따르지 않는 것이 정상입니다.")
+        reason = as_text(result.get("status_reason"))
+        if reason:
+            st.caption(reason)
+
         st.markdown("#### 필수 항목 검토")
-        st.write(result.get("checks") or result.get("missing_information") or "별도 구조로 반환됨")
-        st.markdown("#### 보완 요청 자동 답장")
+        render_checks(result.get("checks"))
+
         draft = result.get("reply_draft") or result.get("reply_draft_ko")
-        st.write(draft or "초안 없음")
+        if draft:
+            st.markdown("#### 보완 요청 회신 초안")
+            render_draft(draft)
+
         guidance = result.get("approval_guidance")
         if guidance:
             st.markdown("#### 승인 검토 안내")
-            st.write(guidance)
-        with st.expander("전체 Codex 결과"):
+            st.markdown(as_text(guidance))
+
+        remaining = {k: v for k, v in result.items() if k not in HANDLED_KEYS}
+        if remaining:
+            with st.expander("그 밖의 반환 항목", expanded=not follows_contract):
+                render_generic(remaining)
+
+        with st.expander("원본 JSON"):
             st.json(result)
 
 
@@ -175,11 +378,36 @@ def main() -> None:
                 "attachments": st.session_state.get("email_attachments", []),
                 "approval_url": approval_url,
             }
-            with st.spinner("A와 B가 동일한 이메일을 Codex exec로 검토하고 있습니다..."):
+            with st.status("A와 B를 동시에 실행합니다...", expanded=True) as run_status:
+                slots = {"treatment": st.empty(), "baseline": st.empty()}
+                labels = {"treatment": "A · Skill 적용", "baseline": "B · Skill 미적용"}
+                failed: set[str] = set()
+
+                def show_event(event: dict[str, object]) -> None:
+                    condition = str(event["condition"])
+                    state = str(event["state"])
+                    slot = slots.get(condition)
+                    if slot is None:
+                        return
+                    label = labels.get(condition, condition)
+                    if state == "running":
+                        slot.info(f"{label}: 실행 중 (최대 {event.get('timeout_seconds')}초)")
+                    elif state == "completed":
+                        slot.success(f"{label}: 완료")
+                    else:
+                        failed.add(condition)
+                        slot.error(f"{label}: {event.get('error') or '실행 실패'}")
+
                 try:
-                    st.session_state.run_dir = str(run_ab(email))
+                    st.session_state.run_dir = str(run_ab(email, show_event))
                 except RuntimeError as exc:
+                    run_status.update(label="A/B 검토 실행 실패", state="error")
                     st.error(str(exc))
+                else:
+                    run_status.update(
+                        label="일부 조건이 완료되지 않았습니다." if failed else "A/B 검토가 완료되었습니다.",
+                        state="error" if failed else "complete",
+                    )
 
     if not st.session_state.get("run_dir"):
         return
