@@ -13,7 +13,16 @@ from .skill_registry import resolve_skill
 
 
 class CodexRunError(RuntimeError):
-    """Raised when Codex cannot complete a local Skill run."""
+    """Raised when Codex cannot complete a local Skill run.
+
+    `kind` lets a caller decide whether retrying is worth anything without matching on
+    the Korean message text. A batch retries `timeout` and `exit`, but retrying
+    `missing_cli` just fails N more times at the same speed.
+    """
+
+    def __init__(self, message: str, *, kind: str = "unknown") -> None:
+        super().__init__(message)
+        self.kind = kind
 
 
 # Codex reads workspace files by shelling out to Windows PowerShell 5.1
@@ -130,7 +139,7 @@ def run_codex(
         if skill_path is not None:
             source = Path(skill_path)
             if not (source / "SKILL.md").is_file():
-                raise CodexRunError(f"Skill 파일이 없습니다: {source}")
+                raise CodexRunError(f"Skill 파일이 없습니다: {source}", kind="missing_skill")
         elif skill is not None:
             source = resolve_skill(skill)
 
@@ -180,17 +189,18 @@ def run_codex(
                 check=False,
             )
         except FileNotFoundError as exc:
-            raise CodexRunError("Codex CLI를 찾을 수 없습니다.") from exc
+            raise CodexRunError("Codex CLI를 찾을 수 없습니다.", kind="missing_cli") from exc
         except subprocess.TimeoutExpired as exc:
-            raise CodexRunError("Codex 실행 시간이 초과되었습니다.") from exc
+            raise CodexRunError("Codex 실행 시간이 초과되었습니다.", kind="timeout") from exc
 
         if completed.returncode != 0:
             detail = completed.stderr.strip()[-1000:]
             raise CodexRunError(
-                f"Codex 실행 실패(exit {completed.returncode}): {detail or 'no stderr'}"
+                f"Codex 실행 실패(exit {completed.returncode}): {detail or 'no stderr'}",
+                kind="exit",
             )
         if not output_path.is_file():
-            raise CodexRunError("Codex 결과 파일이 생성되지 않았습니다.")
+            raise CodexRunError("Codex 결과 파일이 생성되지 않았습니다.", kind="no_output")
 
         text = output_path.read_text(encoding="utf-8").strip()
         return CodexResult(text=text, parsed=parse_codex_json(text))

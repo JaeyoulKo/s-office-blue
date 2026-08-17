@@ -27,6 +27,10 @@ taxonomy가 제공되어야 한다.
 ## 출력 원칙
 
 `case_id`, `label`, `summary`, `evidence`, `missing_information`,
-`recommended_action`, `safety_flags`, `errors` 필드를 사용한다. `label` 값은 국문 taxonomy를
-사용하고, 확인되지 않은 사람·금액·기한·첨부파일 내용을 만들지 않는다. 배열에 내용이 없으면
-빈 배열을 반환한다.
+`recommended_action`, `safety_flags`, `errors`, `urgency` 필드를 사용한다. `label` 값은 국문
+taxonomy를 사용하고, 확인되지 않은 사람·금액·기한·첨부파일 내용을 만들지 않는다. 배열에
+내용이 없으면 빈 배열을 반환한다.
+
+`urgency`는 `high`, `medium`, `low` 중 하나로, 이 메일을 얼마나 먼저 처리해야 하는지에 대한
+판단이다. 판단 기준은 [references/decision-rules.md](references/decision-rules.md)의 `긴급도
+판단`을 따른다. 근거가 없으면 `low`로 두고, 금액이나 순위를 새로 만들어내지 않는다.
