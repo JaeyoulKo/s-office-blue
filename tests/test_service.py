@@ -19,7 +19,7 @@ def case_of(kwargs) -> str:
 
 
 def ok(**kwargs) -> CodexResult:
-    return CodexResult(text="{}", parsed={"label": "공지", "case_id": case_of(kwargs)})
+    return CodexResult(text="{}", parsed={"label": "일반 이메일", "case_id": case_of(kwargs)})
 
 
 class ClassifyEmailsTests(unittest.TestCase):
@@ -143,7 +143,7 @@ class ClassifyArgvTests(unittest.TestCase):
 
         def fake(*args, **kwargs):
             captured.update(kwargs)
-            return CodexResult(text="{}", parsed={"label": "공지"})
+            return CodexResult(text="{}", parsed={"label": "일반 이메일"})
 
         with patch("main_service.service.run_codex", side_effect=fake):
             classify_emails(emails(1))
@@ -157,11 +157,11 @@ class ClassifyArgvTests(unittest.TestCase):
 
         def fake(*args, **kwargs):
             captured.update(kwargs)
-            return CodexResult(text="{}", parsed={"label": "공지"})
+            return CodexResult(text="{}", parsed={"label": "일반 이메일"})
 
         with patch("main_service.service.run_codex", side_effect=fake):
             classify_emails(emails(1))
-        self.assertIn("구매 승인 요청", captured["payload"]["taxonomy"])
+        self.assertIn("구매 승인 검토 필요 이메일", captured["payload"]["taxonomy"])
         self.assertIn("urgency", captured["prompt"])
 
 

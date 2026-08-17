@@ -26,7 +26,7 @@ class ReplyRoute:
 
 
 PURCHASE_APPROVAL = ReplyRoute(
-    label="구매 승인 요청",
+    label="구매 승인 검토 필요 이메일",
     skill="purchase-email-review",
     prompt=(
         "input.json의 구매·승인·계약 이메일을 검토하세요. 필요한 경우 Skill의 국문 "
@@ -63,8 +63,8 @@ STAGE_NONE = "none"                # 처리할 내용이 없음 (공지·일반 
 STAGE_DONE = "done"                # 처리 완료
 STAGE_ERROR = "error"              # 처리하다 실패
 
-# decision-rules.md "분류 후 처리": 공지와 일반 업무 이메일은 브리핑에서 끝난다.
-TERMINAL_LABELS = frozenset({"공지", "일반 업무 이메일"})
+# decision-rules.md "분류 후 처리": 일반 이메일은 브리핑에서 끝난다.
+TERMINAL_LABELS = frozenset({"일반 이메일"})
 
 
 def mail_stage(

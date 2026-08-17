@@ -1,0 +1,57 @@
+{
+  "case_id": "discussion-amount-escalation-001",
+  "difficulty": "edge_case",
+  "title": "누락 공사 발견으로 2억원에서 5억 4,000만원으로 증액",
+  "messages": [
+    {
+      "message_id": "dae01-m1",
+      "thread_id": "thread-dae01",
+      "from": "한지민 <jimin.han@mirinae-logis.example>",
+      "to": ["운영기획 <ops-plan@mirinae-logis.example>"],
+      "cc": ["Finance <finance@mirinae-logis.example>"],
+      "date": "2026-08-03T09:20:00+09:00",
+      "subject": "남부센터 야간 운영 설비 및 인력안 검토",
+      "body": "남부센터 야간 운영을 위해 계약직 인력과 래핑 장비를 도입하는 초안을 공유드립니다. 현재 확인된 인력비와 장비 임차료를 합한 예상 금액은 2억원입니다. 운영 조건과 예산 배분을 검토해 주세요."
+    },
+    {
+      "message_id": "dae01-m2",
+      "thread_id": "thread-dae01",
+      "from": "오세진 <sejin.oh@mirinae-logis.example>",
+      "to": ["한지민 <jimin.han@mirinae-logis.example>"],
+      "cc": ["Finance <finance@mirinae-logis.example>"],
+      "date": "2026-08-05T15:10:00+09:00",
+      "subject": "RE: 남부센터 야간 운영 설비 및 인력안 검토",
+      "body": "현재 제출된 범위와 2억원을 기준으로 예산 검토를 완료했습니다. 시설팀 현장 실사와 Compliance 근무시간 검토를 병행해 주세요. 추가 범위가 확인되면 실행 전에 다시 공유해야 합니다."
+    },
+    {
+      "message_id": "dae01-m3",
+      "thread_id": "thread-dae01",
+      "from": "문도현 <dohyun.moon@mirinae-logis.example>",
+      "to": ["운영기획 <ops-plan@mirinae-logis.example>"],
+      "cc": ["시설팀 <facility@mirinae-logis.example>", "Compliance <compliance@mirinae-logis.example>"],
+      "date": "2026-08-10T11:45:00+09:00",
+      "subject": "RE: 남부센터 야간 운영 설비 및 인력안 검토 - 현장 실사 결과",
+      "body": "현장 실사 결과 최초 범위에서 누락된 사항을 발견했습니다. 야간 운영을 위해 소방 구획 공사, 수전 용량 증설, 비상 발전기 연동, 안전관리 인력과 야간 교통편이 추가로 필요합니다. 공급사에 누락 범위를 반영한 견적을 다시 요청했습니다."
+    },
+    {
+      "message_id": "dae01-m4",
+      "thread_id": "thread-dae01",
+      "from": "한지민 <jimin.han@mirinae-logis.example>",
+      "to": ["Finance <finance@mirinae-logis.example>", "운영기획 <ops-plan@mirinae-logis.example>"],
+      "cc": ["시설팀 <facility@mirinae-logis.example>"],
+      "date": "2026-08-13T14:30:00+09:00",
+      "subject": "RE: 남부센터 야간 운영 설비 및 인력안 검토 - 수정 견적",
+      "body": "누락 범위를 반영한 수정 견적을 받았습니다. 기존 인력·장비 2억원에 소방 구획 공사 1억 2,000만원, 전력 및 비상발전기 공사 1억 5,000만원, 안전관리 인력·교통·교육비 7,000만원이 추가되어 현재 총액은 5억 4,000만원입니다. 최초 검토 금액과 차이가 커 예산 배분과 승인 유효성을 다시 논의해야 합니다."
+    },
+    {
+      "message_id": "dae01-m5",
+      "thread_id": "thread-dae01",
+      "from": "최은호 <eunho.choi@mirinae-logis.example>",
+      "to": ["한지민 <jimin.han@mirinae-logis.example>", "Finance <finance@mirinae-logis.example>"],
+      "cc": ["투자심의 <investment@mirinae-logis.example>"],
+      "date": "2026-08-14T16:15:00+09:00",
+      "subject": "RE: 남부센터 야간 운영 설비 및 인력안 검토 - 금액 변경 논의",
+      "body": "현재 논의 기준 금액은 5억 4,000만원이며 최초 2억원 검토 상태를 최신 실행안의 승인으로 해석하면 안 됩니다. 소방·전력 공사 범위, 비용센터 재배분과 재승인 절차가 미결 사항입니다. 최종 범위를 확정한 뒤 별도의 승인 요청을 상신해 주세요."
+    }
+  ]
+}

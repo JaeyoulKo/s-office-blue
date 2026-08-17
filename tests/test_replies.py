@@ -16,7 +16,7 @@ from main_service.replies import (
 from main_service.service import draft_replies, draft_reply
 from main_service.skill_registry import SKILLS
 
-APPROVAL = "구매 승인 요청"
+APPROVAL = "구매 승인 검토 필요 이메일"
 
 
 class RouteTests(unittest.TestCase):
@@ -46,10 +46,9 @@ class RouteTests(unittest.TestCase):
         self.assertIsNone(reply_route(""))
         self.assertIsNone(reply_route(None))
 
-    def test_purchase_labels_are_not_all_wired_yet(self):
-        """구매 요청·계약 관련은 회신 성격이 달라 같은 경로로 묶지 않았다."""
+    def test_all_purchase_labels_are_wired(self):
         unwired = PURCHASE_LABELS - set(REPLY_ROUTES)
-        self.assertEqual(unwired, {"구매 요청", "계약 관련"})
+        self.assertEqual(unwired, set())
 
 
 class StageTests(unittest.TestCase):
@@ -68,13 +67,11 @@ class StageTests(unittest.TestCase):
         self.assertEqual(self.stage(), "todo")
 
     def test_notice_has_nothing_to_do(self):
-        self.assertEqual(self.stage(label="공지", follow_up=False), "none")
-        self.assertEqual(self.stage(label="일반 업무 이메일", follow_up=False), "none")
+        self.assertEqual(self.stage(label="일반 이메일", follow_up=False), "none")
 
     def test_follow_up_without_a_skill_is_unsupported(self):
         """후속 조치는 필요한데 회신 Skill이 아직 없는 상태를 '처리 없음'과 섞지 않는다."""
-        self.assertEqual(self.stage(label="보완 요청 또는 질의"), "unsupported")
-        self.assertEqual(self.stage(label="계약 관련"), "unsupported")
+        self.assertEqual(self.stage(label="논의 내용 요약 필요 이메일"), "unsupported")
 
     def test_drafted_is_done_even_when_there_is_nothing_to_send(self):
         """'검토했고 보낼 게 없다'도 처리 결과다. 미처리로 돌리지 않는다."""
@@ -151,7 +148,7 @@ class DraftReplyTests(unittest.TestCase):
     def test_refuses_an_unsupported_label(self):
         with patch("main_service.service.run_codex") as mocked:
             with self.assertRaises(ValueError):
-                draft_reply(email(), {"label": "공지"})
+                draft_reply(email(), {"label": "일반 이메일"})
         mocked.assert_not_called()  # 지원 안 하면 Codex를 아예 부르지 않는다
 
     def test_refuses_when_there_is_no_classification(self):
