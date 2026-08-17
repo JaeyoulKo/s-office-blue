@@ -89,9 +89,11 @@ UI와 제출 실험에는 `presentation_very_hard_01`부터 `05`까지 정확히
 
 A/B 결과는 발신자, 날짜, Topic, 화면용 금액, Business Impact, 변경 내용, 결정 내용과
 Open Item만 좌우에 표시한다. 내부 검증에 필요한 승인 상태, 적용 규칙, thread ID, 모델 설정과
-실행 시간은 화면에서 숨긴다. **A 결과 Excel 다운로드**는 현재 선택한 fixture의 WITH_SKILL
-결과 한 행만 실제 `.xlsx`로 생성한다. 금액은 숫자 셀, 날짜는 Excel 날짜 셀로 저장하고 승인
-상태·적용 규칙과 실행 metadata는 제외한다.
+실행 시간은 화면에서 숨긴다. **A 결과를 Excel에 추가**를 누르면 WITH_SKILL 결과 한 행만
+`experiments/instances/email_archive_exports/email_archive_results.xlsx`에 누적한다. 이 runtime
+파일은 Git에서 제외된다. **누적 Excel 다운로드**는 저장된 전체 workbook을 내려받으며 행을
+추가하지 않는다. 금액은 숫자 셀, 날짜는 Excel 날짜 셀로 저장하고 승인 상태·적용 규칙과 실행
+metadata는 제외한다.
 
 ## 실행과 결과 활용
 
