@@ -1,0 +1,19 @@
+{
+  "id": 3,
+  "pr_number": "PR30922",
+  "type": "Capex",
+  "email_subject": "Action required: Approve the Requisition that 임현우 submitted - PR30922 - 보안 인프라 - 클라우드 이관 및 서버 구축 - 넥스트클라우드 (80,000,000 KRW)",
+  "requester": "임현우",
+  "vendor": "넥스트클라우드",
+  "total_amount": "80,000,000 KRW",
+  "description": "온프레미스 보안 데이터의 클라우드 마이그레이션 및 솔루션 라이선스 도입 계약 건입니다.",
+  "recent_comments": "8/01 - 임현우: 보안팀 검토 완료되었으며 서버 이관 산정표 포함되어 있습니다.",
+  "cost_breakdown": {
+    "has_data": true,
+    "details": "인프라 서버 마이그레이션 3,000만 원 + 보안 솔루션 라이선스 5,000만 원 = 총 80,000,000원"
+  },
+  "expected_effects": {
+    "has_data": true,
+    "details": "외부 데이터 침해 리스크 최소화 및 서버 유지관리비 연 3,000만 원 절감"
+  }
+}
