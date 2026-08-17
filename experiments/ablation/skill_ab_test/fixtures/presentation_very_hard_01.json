@@ -1,0 +1,45 @@
+{
+  "scenario_id": "presentation_very_hard_01",
+  "difficulty": "very_hard",
+  "title": "야간 운영 투자 승인 후 6% 금액 조정",
+  "messages": [
+    {
+      "message_id": "pvh01-m1", "thread_id": "thread-pvh01", "from": "한지민 <jimin.han@mirinae-logis.example>", "to": ["운영기획 <ops-plan@mirinae-logis.example>"], "cc": ["Finance <finance@mirinae-logis.example>"], "date": "2026-10-05T08:42:00+09:00", "subject": "남부센터 야간 출고 운영안 검토 요청",
+      "body": "안녕하세요. 지난 분기부터 남부센터의 당일 출고 마감 이후 주문이 꾸준히 늘어, 11월 성수기 전에 야간조를 한시적으로 운영하는 안을 검토 요청드립니다. 첨부한 초안은 6개월 동안 계약직 18명을 추가하고 자동 래핑 장비 2대를 임차하는 구성으로, 총비용은 2억 8,000만원입니다. 현장에서는 오후 10시 이후 밀린 물량 때문에 다음 날 첫 차량 출발이 늦어지는 사례가 주 2~3회 있었다고 합니다. 다만 지연 감소 폭은 아직 측정하지 않았으므로 생산성 개선이나 절감액을 확정 수치로 보기는 어렵습니다. 작년 동부센터에서는 비슷한 운영을 했지만 당시에는 2교대였고 이번 안은 탄력근로 요소가 있어 조건이 다릅니다. 인력업체는 10월 말까지 의사결정이 되면 채용 일정을 맞출 수 있다고 했습니다. 우선 budget과 근무시간 기준을 함께 검토해 주시면 수정안을 준비하겠습니다. 감사합니다."
+    },
+    {
+      "message_id": "pvh01-m2", "thread_id": "thread-pvh01", "from": "오세진 <sejin.oh@mirinae-logis.example>", "to": ["한지민 <jimin.han@mirinae-logis.example>"], "cc": ["운영기획 <ops-plan@mirinae-logis.example>"], "date": "2026-10-06T11:15:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청",
+      "body": "자료 공유 감사합니다. Finance에서 올해 물류 개선 예산의 집행 잔액을 확인한 결과 3억원을 배정할 수 있습니다. 비용센터 배분은 본사 60%, 남부센터 40%로 정리했고, 12월 이후 비용은 차년도 계정으로 이월하는 방식입니다. 숫자와 운영 필요성에 큰 이견이 없어 오늘 결재된 투자품의서에도 3억원을 승인 금액으로 반영했습니다. 인력 운영 방식은 Compliance 의견을 반영하는 조건으로 추진해 주세요. 다음 주 제가 교육 일정으로 이틀 자리를 비우므로 계정 코드 질문은 박서윤 매니저에게 주시면 됩니다. 현장에서는 vendor 미팅과 장비 반입 가능 날짜를 미리 확인하고, 인력업체에도 예상 일정을 공유해도 좋습니다. 12월 비용 귀속과 invoice 분할 방식은 월말 closing 전에 다시 맞추겠습니다."
+    },
+    {
+      "message_id": "pvh01-m3", "thread_id": "thread-pvh01", "from": "문도현 <dohyun.moon@mirinae-logis.example>", "to": ["운영기획 <ops-plan@mirinae-logis.example>"], "cc": ["Compliance <compliance@mirinae-logis.example>"], "date": "2026-10-07T16:28:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청",
+      "body": "Operations 입장에서는 성수기 전에 준비를 시작할 필요가 있습니다. 최근 두 차례 주간회의에서도 야간 출고 지연이 고객센터 문의로 이어졌고, 장비 설치 가능일을 확보하지 않으면 11월 셋째 주 이후로 밀릴 수 있다고 합니다. 어제 승인된 3억원 안을 기준으로 시설팀은 전력 용량 확인과 vendor 현장 실사를 진행해 주세요. 다만 지난달 노동부 점검에서 휴게시간 기록과 연장근로 사전 동의 절차를 보완하라는 안내가 있었던 만큼, 현재 초안의 12시간 연속 근무 형태는 Compliance와 조정해야 합니다. 동부센터 사례 자료는 참고할 수 있지만 당시 근무표를 그대로 복사하지 말아 주세요. 일정 예약과 출입증 준비를 병행하고, 금요일 회의에는 교육 담당자도 초대하겠습니다. 승인 회의록은 문서관리팀이 다음 주 배포할 예정입니다."
+    },
+    {
+      "message_id": "pvh01-m4", "thread_id": "thread-pvh01", "from": "배수아 <sua.bae@mirinae-logis.example>", "to": ["한지민 <jimin.han@mirinae-logis.example>"], "cc": ["Operations <operations@mirinae-logis.example>", "Finance <finance@mirinae-logis.example>"], "date": "2026-10-09T14:05:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청",
+      "body": "안녕하세요. 첨부 초안과 지난 노동부 점검 기록을 대조했습니다. 운영 필요성이나 예산 여부와 별개로, 현재 제안된 야간조는 특정 주에 연장근로 상한을 넘길 가능성이 있고 휴게시간이 실제 작업 중간에 보장되는지도 문서상 확인되지 않습니다. 지난달 북부센터가 비슷한 사유로 근무표를 수정한 뒤 재검토를 받은 사례가 있으므로 이번 건도 현 상태로 바로 진행하기는 어렵습니다. 야간조를 18명 단일조가 아니라 12명씩 교차하는 두 개 조로 바꾸고, 주별 연장시간 계산표와 근로자 동의 절차를 포함해 다시 보내 주세요. 장비 실사나 회의실 예약은 Compliance approval과 무관한 준비 활동이므로 진행할 수 있지만, 준비가 시작됐다는 사실을 운영안 승인으로 표현하면 안 됩니다. 수정 자료를 받으면 이틀 안에 검토하겠습니다."
+    },
+    {
+      "message_id": "pvh01-m5", "thread_id": "thread-pvh01", "from": "한지민 <jimin.han@mirinae-logis.example>", "to": ["Compliance <compliance@mirinae-logis.example>"], "cc": ["Finance <finance@mirinae-logis.example>", "Operations <operations@mirinae-logis.example>"], "date": "2026-10-13T09:37:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청 - 수정본",
+      "body": "요청하신 내용을 반영한 운영안 v2를 전달드립니다. 12명 교차조로 바꾸면서 총 투입 인원은 24명으로 늘었고, 휴게시간은 근무표 안에서 조별로 분리했습니다. 노무법인 검토 의견과 주별 연장시간 계산표도 첨부했습니다. 인원이 늘어난 대신 래핑 장비는 6개월 rental로 조정했고, 교육비와 야간 교통비를 포함한 revised quotation은 3억 1,800만원입니다. 기존 승인 문서의 3억원은 최초 견적 기준이며 실제 실행 견적은 이번 v2 금액입니다. vendor는 11월 9일 설치 slot을 임시로 잡아 두었고 장비 사양표도 보내왔습니다. 물량 지연 감소는 목표일 뿐 검증된 benefit이 아니어서 KPI 측정안을 함께 넣었습니다. 비용센터 비율과 payment milestone은 유지됩니다."
+    },
+    {
+      "message_id": "pvh01-m6", "thread_id": "thread-pvh01", "from": "배수아 <sua.bae@mirinae-logis.example>", "to": ["한지민 <jimin.han@mirinae-logis.example>"], "cc": ["Finance <finance@mirinae-logis.example>", "Operations <operations@mirinae-logis.example>"], "date": "2026-10-15T13:12:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청 - 수정본",
+      "body": "수정본과 노무법인 의견을 확인했습니다. 교차조 편성, 휴게시간 기록, 사전 동의 절차가 지난 점검에서 요구된 기준을 충족하므로 v2 운영 형태에 대한 Compliance review는 종료해도 됩니다. 실제 운영 중에는 주별 연장시간을 HR 시스템에서 모니터링해야 하지만 이는 시행 후 관리 항목입니다. 이번 검토 자료에 기재된 현재 비용은 3억 1,800만원이며 Compliance에서는 금액이나 payment schedule을 별도로 판단하지 않았습니다. 이전 메일에서 문제로 남겼던 12시간 연속 근무 항목은 해결됐습니다. 다음 주 노동부 간담회 자료에는 이번 건의 개인 정보가 들어가지 않도록 요약 수치만 사용할 예정입니다. Finance는 변경 견적과 비용센터 자료를 전달받았다고 확인했습니다."
+    },
+    {
+      "message_id": "pvh01-m7", "thread_id": "thread-pvh01", "from": "오세진 <sejin.oh@mirinae-logis.example>", "to": ["한지민 <jimin.han@mirinae-logis.example>"], "cc": ["투자심의 <investment@mirinae-logis.example>"], "date": "2026-10-16T17:46:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청 - 비용 변경",
+      "body": "Compliance 쟁점이 정리된 점은 확인했습니다. Finance 파일에는 10월 6일 승인 금액 3억원과 이번 revised quotation 3억 1,800만원을 나란히 반영했습니다. 전체 물류개선 budget 안에서는 차액을 흡수할 수 있고 비용센터 배분도 그대로 사용할 수 있습니다. Operations에서 확보한 설치 slot과 교육 일정은 유지해 주세요. vendor가 보낸 계약금 20%, 설치 60%, 검수 20% payment schedule에 맞춰 cash-flow sheet 수정도 완료했습니다. 예전 3억원 승인 메일은 회의자료의 history 탭에 보존했고 표지에는 현재 실행 금액과 24명 인원을 반영했습니다. 문서관리 번호는 기존 project 번호를 유지했으며 KPI sheet도 최신 v2 package에 포함했습니다."
+    },
+    {
+      "message_id": "pvh01-m8", "thread_id": "thread-pvh01", "from": "최은호 <eunho.choi@mirinae-logis.example>", "to": ["한지민 <jimin.han@mirinae-logis.example>"], "cc": ["Finance <finance@mirinae-logis.example>", "Operations <operations@mirinae-logis.example>"], "date": "2026-10-19T10:24:00+09:00", "subject": "RE: 남부센터 야간 출고 운영안 검토 요청 - 심의 일정",
+      "body": "자료는 잘 받았습니다. 현장 필요성이 있고 근로시간 관련 보완도 완료된 만큼 내부적으로 긍정적으로 보고 있습니다. Operations는 11월 일정에 맞춰 출입 절차와 교육장 예약을 계속 준비해 주세요. revised quotation 3억 1,800만원과 최초 승인 문서 3억원을 이번 주 portfolio 현황표에 함께 표시했고, Finance가 확인한 cash-flow도 첨부했습니다. vendor는 11월 9일 slot을 유지하고 있으며 Procurement는 회의 결과가 등록되면 purchase order 일자를 확정할 예정입니다. 아래에는 과거 승인 회신과 3억원 견적이 인용되어 있으니 최신 견적과 혼동하지 마십시오. v2, KPI 측정 계획과 cover sheet는 모두 수령해 investment register의 자료 항목을 갱신했습니다. 담당자가 휴가 중이라 시스템 approval status만 아직 기존 값으로 남아 있습니다."
+    }
+  ],
+  "expected": {
+    "발신자": "최은호 <eunho.choi@mirinae-logis.example>", "날짜": "2026-10-19T10:24:00+09:00", "Topic": "남부센터 야간 운영 승인 후 금액 변경", "금액": "3억 1,800만원(현재 견적, 재승인 필요)", "Business Impact": "출고 지연 감소 목표이며 검증된 개선 수치는 확인되지 않음", "Thread 진행 중 변경된 내용": ["3억원 최종 승인", "18명 단일조 → 24명 교차조", "승인 금액 3억원 → revised quotation 3억 1,800만원(+6%)", "근로시간 Compliance 검토 완료"], "결정된 내용": ["회사 Archive 정책 판단: 승인 금액 3억원 대비 현재 금액 3억 1,800만원은 6% 증가하여 기존 승인이 변경 금액에 유효하지 않고 재승인이 필요함", "v2 근무 형태의 Compliance review 완료"], "Open Item": ["3억 1,800만원 revised investment approval"]
+  },
+  "ground_truth": {
+    "applicable_skill_rules": ["AR-01", "AR-06"], "current_amount": "3억 1,800만원", "current_vendor": null, "approval_status": "reapproval_required", "valid_decisions": ["3억원 최초 투자 승인", "Compliance review 완료"], "unresolved_open_items": ["3억 1,800만원 revised investment approval"], "resolved_items": ["근로시간 Compliance review"], "reopened_items": [], "superseded_values": ["3억원 승인 견적", "18명 단일조"], "key_state_transitions": ["3억원 승인", "24명 교차조 수정", "3억 1,800만원(+6%) 견적 수령", "AR-01에 따라 재승인 필요"]
+  }
+}
