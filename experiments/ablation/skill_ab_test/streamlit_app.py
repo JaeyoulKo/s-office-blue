@@ -1,14 +1,22 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 from html import escape
+from pathlib import Path
 
 import streamlit as st
 
-from experiments.ablation.skill_ab_test.excel_export import build_with_skill_workbook
+from experiments.ablation.skill_ab_test.excel_export import WithSkillExcelStore
 from experiments.ablation.skill_ab_test.presentation import USER_SUMMARY_FIELDS, format_summary_field
 from experiments.ablation.skill_ab_test.runner import run_ab_test
 from experiments.ablation.skill_ab_test.synthetic_fixtures import load_synthetic_scenarios
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+EXCEL_EXPORT_PATH = (
+    PROJECT_ROOT / "experiments" / "instances" / "email_archive_exports" / "email_archive_results.xlsx"
+)
+EXCEL_EXPORT_ROOT = PROJECT_ROOT / "experiments" / "instances"
 
 
 def _render_thread(scenario: object) -> None:
@@ -111,11 +119,45 @@ def _render_comparison(with_skill: dict[str, object], without_skill: dict[str, o
 
 
 def _store_result(scenario: object, result: dict[str, object]) -> None:
+    run_id = int(st.session_state.get("email_archive_ab_run_id", 0)) + 1
     st.session_state.email_archive_ab_result = result
     st.session_state.email_archive_ab_scenario = scenario.scenario_id
-    st.session_state.email_archive_ab_excel = build_with_skill_workbook(result["with_skill"])
-    st.session_state.email_archive_ab_excel_name = (
-        f"{scenario.scenario_id}_with_skill_{date.today().isoformat()}.xlsx"
+    st.session_state.email_archive_ab_run_id = run_id
+    st.session_state.email_archive_ab_save_message = None
+
+
+def _render_excel_controls(result: dict[str, object] | None) -> None:
+    store = WithSkillExcelStore(EXCEL_EXPORT_PATH, EXCEL_EXPORT_ROOT)
+    run_id = st.session_state.get("email_archive_ab_run_id")
+    append_clicked = st.button("A 결과를 Excel에 추가", disabled=result is None)
+    if append_clicked and result is not None:
+        if st.session_state.get("email_archive_ab_saved_run_id") == run_id:
+            st.info("현재 A/B 실행 결과는 이미 Excel에 추가되었습니다.")
+        else:
+            try:
+                row_number = store.append_with_skill_result(result["with_skill"])
+                st.session_state.email_archive_ab_saved_run_id = run_id
+                st.session_state.email_archive_ab_save_message = (
+                    f"A 결과가 {row_number}번째 행에 추가되었습니다."
+                )
+            except Exception as exc:
+                st.error(f"A 결과를 Excel에 추가하지 못했습니다: {exc}")
+    message = st.session_state.get("email_archive_ab_save_message")
+    if message:
+        st.success(message)
+    try:
+        workbook_bytes = store.read_bytes()
+    except Exception as exc:
+        st.error(f"누적 Excel 파일을 다운로드할 수 없습니다: {exc}")
+        return
+    if workbook_bytes is None:
+        st.info("저장된 결과가 없습니다.")
+        return
+    st.download_button(
+        "누적 Excel 다운로드",
+        data=workbook_bytes,
+        file_name=EXCEL_EXPORT_PATH.name,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -141,20 +183,14 @@ def main() -> None:
             except Exception as exc:
                 st.error(f"A/B 분석에 실패했습니다: {exc}")
 
-    if st.session_state.get("email_archive_ab_scenario") != scenario.scenario_id:
-        return
-    result = st.session_state.get("email_archive_ab_result")
-    if not result:
-        return
-    _render_comparison(result["with_skill"], result["without_skill"])
-
-    st.download_button(
-        "A 결과 Excel 다운로드",
-        data=st.session_state.email_archive_ab_excel,
-        file_name=st.session_state.email_archive_ab_excel_name,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary",
-    )
+    result = None
+    if st.session_state.get("email_archive_ab_scenario") == scenario.scenario_id:
+        result = st.session_state.get("email_archive_ab_result")
+    if result:
+        _render_comparison(result["with_skill"], result["without_skill"])
+    else:
+        st.info("A/B 분석을 실행하면 A 결과를 누적 Excel에 추가할 수 있습니다.")
+    _render_excel_controls(result)
 
 
 if __name__ == "__main__":
