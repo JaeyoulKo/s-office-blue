@@ -22,18 +22,14 @@ EMAIL_DIR = PROJECT_ROOT / "data" / "synthetic" / "emails"
 # shared/taxonomy.md 및 skills/email-classifier/references/decision-rules.md와 같아야 한다.
 # tests/test_emails.py::test_taxonomy_labels_match_decision_rules 가 이를 강제한다.
 LABELS: tuple[str, ...] = (
-    "구매 승인 요청",
-    "구매 요청",
-    "계약 관련",
-    "보완 요청 또는 질의",
-    "공지",
-    "일반 업무 이메일",
-    "분류 불가",
+    "구매 승인 검토 필요 이메일",
+    "논의 내용 요약 필요 이메일",
+    "일반 이메일",
 )
 
 # decision-rules.md "분류 후 처리"의 라우팅을 그대로 옮긴 것이다.
-PURCHASE_LABELS = frozenset({"구매 승인 요청", "구매 요청", "계약 관련"})
-DISCUSSION_LABELS = frozenset({"보완 요청 또는 질의", "분류 불가"})
+PURCHASE_LABELS = frozenset({"구매 승인 검토 필요 이메일"})
+DISCUSSION_LABELS = frozenset({"논의 내용 요약 필요 이메일"})
 REPLY_LABELS = PURCHASE_LABELS | DISCUSSION_LABELS
 
 URGENCY_RANK = {"high": 0, "medium": 1, "low": 2}

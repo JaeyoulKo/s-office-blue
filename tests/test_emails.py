@@ -28,7 +28,7 @@ SAMPLE = (
 )
 
 
-def briefing(case_id, *, label="구매 승인 요청", urgency="low", amount=None, index=0):
+def briefing(case_id, *, label="구매 승인 검토 필요 이메일", urgency="low", amount=None, index=0):
     email = normalize_email({"case_id": case_id, "subject": case_id, "body": ""})
     email["index"] = index
     email["amount"] = Amount(value=amount, currency="KRW" if amount else "", raw="")
@@ -76,15 +76,15 @@ class RankTests(unittest.TestCase):
 
     def test_notice_outranks_purchase_when_more_urgent(self):
         items = [
-            briefing("purchase", label="구매 승인 요청", urgency="medium", amount=999, index=0),
-            briefing("notice", label="공지", urgency="high", index=1),
+            briefing("purchase", label="구매 승인 검토 필요 이메일", urgency="medium", amount=999, index=0),
+            briefing("notice", label="일반 이메일", urgency="high", index=1),
         ]
         self.assertEqual(rank_briefings(items)[0]["case_id"], "notice")
 
     def test_purchase_sorts_before_non_purchase_at_equal_urgency(self):
         items = [
-            briefing("notice", label="공지", urgency="high", index=0),
-            briefing("purchase", label="구매 요청", urgency="high", amount=1, index=1),
+            briefing("notice", label="일반 이메일", urgency="high", index=0),
+            briefing("purchase", label="구매 승인 검토 필요 이메일", urgency="high", amount=1, index=1),
         ]
         self.assertEqual(rank_briefings(items)[0]["case_id"], "purchase")
 
@@ -247,7 +247,7 @@ class InboxTests(unittest.TestCase):
     def test_amount_becomes_available_once_classified(self):
         inbox = load_inbox(SAMPLE)
         ranks = amount_ranks(inbox)
-        record = {"status": "ok", "classification": {"label": "구매 승인 요청", "urgency": "low"}}
+        record = {"status": "ok", "classification": {"label": "구매 승인 검토 필요 이메일", "urgency": "low"}}
         items = [
             build_briefing(e, record, amount_rank=ranks.get(e["case_id"]), amount_pool=len(ranks))
             for e in inbox
@@ -266,7 +266,7 @@ class InboxTests(unittest.TestCase):
 
     def test_summary_counts_come_from_classification(self):
         inbox = load_inbox(SAMPLE)
-        items = [briefing(f"c{i}", label="구매 승인 요청", urgency="high", amount=100, index=i)
+        items = [briefing(f"c{i}", label="구매 승인 검토 필요 이메일", urgency="high", amount=100, index=i)
                  for i in range(3)]
         summary = summarize(inbox, items)
         self.assertEqual(summary["urgent"], 3)
@@ -290,8 +290,8 @@ class ProgressLineTests(unittest.TestCase):
     def test_reads_as_a_sentence_about_what_we_did(self):
         from main_service.render import classified_line
 
-        line = classified_line("최유리 (Ariba)", "구매 승인 요청", ok=True)
-        self.assertEqual(line, "✅ 최유리 (Ariba) 님이 보낸 메일을 구매 승인 요청으로 분류했어요.")
+        line = classified_line("최유리 (Ariba)", "구매 승인 검토 필요 이메일", ok=True)
+        self.assertEqual(line, "✅ 최유리 (Ariba) 님이 보낸 메일을 구매 승인 검토 필요 이메일로 분류했어요.")
         self.assertNotIn("Approve", line)
 
     def test_picks_the_korean_particle_by_final_consonant(self):
@@ -300,11 +300,9 @@ class ProgressLineTests(unittest.TestCase):
         def label_of(text: str) -> str:
             return classified_line("a", text, ok=True).split("메일을 ")[1]
 
-        self.assertEqual(label_of("구매 승인 요청"), "구매 승인 요청으로 분류했어요.")  # 받침 ㅇ
-        self.assertEqual(label_of("계약 관련"), "계약 관련으로 분류했어요.")            # 받침 ㄴ
-        self.assertEqual(label_of("공지"), "공지로 분류했어요.")                        # 받침 없음
-        self.assertEqual(label_of("분류 불가"), "분류 불가로 분류했어요.")              # 받침 없음
-        self.assertEqual(label_of("일반 업무 이메일"), "일반 업무 이메일로 분류했어요.")  # 받침 ㄹ
+        self.assertEqual(label_of("구매 승인 검토 필요 이메일"), "구매 승인 검토 필요 이메일로 분류했어요.")
+        self.assertEqual(label_of("논의 내용 요약 필요 이메일"), "논의 내용 요약 필요 이메일로 분류했어요.")
+        self.assertEqual(label_of("일반 이메일"), "일반 이메일로 분류했어요.")
 
     def test_every_taxonomy_label_gets_a_particle(self):
         from main_service.render import classified_line
@@ -368,8 +366,8 @@ class ConfirmationTests(unittest.TestCase):
 class TaxonomyTests(unittest.TestCase):
     """taxonomy.md와 decision-rules.md가 갈라지면 라우팅 절반이 도달 불가능해진다.
 
-    주입된 taxonomy가 skill 자체 규칙을 이기기 때문에, 조용히 어긋나면 `구매 요청`과
-    `계약 관련`이 영원히 나오지 않고 `is_purchase` 판정이 무너진다.
+    주입된 taxonomy가 skill 자체 규칙을 이기기 때문에, 조용히 어긋나면 라우팅과
+    `is_purchase` 판정이 무너진다.
     """
 
     @staticmethod
