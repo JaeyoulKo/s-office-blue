@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,11 +32,21 @@ def save_result(folder: Path, result: CodexResult) -> None:
         )
 
 
+def emit_event(condition: str, state: str, **details: object) -> None:
+    """Stream one condition's progress to the caller as a single stdout line."""
+    event = {"condition": condition, "state": state, **details}
+    print(f"AB_EVENT {json.dumps(event, ensure_ascii=False)}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one Skill ablation experiment.")
     parser.add_argument("experiment", help="Directory name under experiments/ablation")
     parser.add_argument("--case", type=Path)
     parser.add_argument("--run-id")
+    parser.add_argument(
+        "--service-tier",
+        help="Override experiment.json service_tier for this run (e.g. priority).",
+    )
     args = parser.parse_args()
 
     experiment_dir = Path(__file__).resolve().parent / args.experiment
@@ -63,6 +74,10 @@ def main() -> None:
     if observation_path.is_file():
         shutil.copy2(observation_path, run_dir / "observation.md")
 
+    treatment_path = config.get("treatment_skill_path")
+    timeout_seconds = int(config.get("condition_timeout_seconds", 150))
+    service_tier = args.service_tier or config.get("service_tier")
+
     manifest = {
         "run_id": run_id,
         "experiment": config["name"],
@@ -71,34 +86,54 @@ def main() -> None:
         "codex_version": codex_version(),
         "model": config["model"],
         "reasoning_effort": config["reasoning_effort"],
+        "service_tier": service_tier,
         "input_sha256": hashlib.sha256(case_bytes).hexdigest(),
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "conditions": {},
     }
 
-    for condition, skill in (("baseline", None), ("treatment", config["treatment_skill"])):
+    conditions = (("baseline", None), ("treatment", config["treatment_skill"]))
+
+    def execute_condition(condition: str, skill: str | None) -> dict[str, object]:
         started_at = utc_now()
+        emit_event(condition, "running", timeout_seconds=timeout_seconds)
+        use_path = treatment_path and condition == "treatment"
         try:
             result = run_codex(
                 prompt=prompt,
                 payload=payload,
-                skill=skill,
+                skill=None if use_path else skill,
+                skill_path=(ROOT / treatment_path) if use_path else None,
                 model=config["model"],
                 reasoning_effort=config["reasoning_effort"],
+                service_tier=service_tier,
+                timeout_seconds=timeout_seconds,
             )
             save_result(run_dir / condition, result)
             error = None
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
             error_dir = run_dir / condition
-            error_dir.mkdir()
+            error_dir.mkdir(parents=True, exist_ok=True)
             (error_dir / "error.txt").write_text(error + "\n", encoding="utf-8")
-        manifest["conditions"][condition] = {
+        emit_event(condition, "failed" if error else "completed", error=error)
+        return {
             "skill": skill,
+            "skill_path": treatment_path if use_path else None,
             "started_at": started_at,
             "finished_at": utc_now(),
             "error": error,
         }
+
+    # baseline and treatment are independent, so wall clock is the slower of the two
+    # rather than their sum.
+    with ThreadPoolExecutor(max_workers=len(conditions), thread_name_prefix="ablation") as executor:
+        futures = {
+            condition: executor.submit(execute_condition, condition, skill)
+            for condition, skill in conditions
+        }
+        for condition, future in futures.items():
+            manifest["conditions"][condition] = future.result()
 
     manifest["finished_at"] = utc_now()
     (run_dir / "manifest.json").write_text(

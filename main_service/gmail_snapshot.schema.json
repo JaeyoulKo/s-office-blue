@@ -2,8 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["messages"],
+  "required": ["messages", "errors"],
   "properties": {
+    "errors": {
+      "type": "array",
+      "description": "도구를 쓰지 못했거나 결과를 읽지 못한 이유. 없으면 빈 배열.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["where", "reason"],
+        "properties": {
+          "where": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
     "messages": {
       "type": "array",
       "items": {

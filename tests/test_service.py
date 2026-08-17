@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+import threading
+import time
+import unittest
+from unittest.mock import patch
+
+from main_service.codex_runner import CodexResult, CodexRunError
+from main_service.service import classify_emails
+
+
+def emails(count: int) -> list[dict[str, object]]:
+    return [{"case_id": f"c{i}", "subject": f"s{i}", "body": ""} for i in range(count)]
+
+
+def case_of(kwargs) -> str:
+    """run_codex는 키워드 전용이라 대역도 payload에서 이메일을 꺼내야 한다."""
+    return str(kwargs["payload"]["email"]["case_id"])
+
+
+def ok(**kwargs) -> CodexResult:
+    return CodexResult(text="{}", parsed={"label": "공지", "case_id": case_of(kwargs)})
+
+
+class ClassifyEmailsTests(unittest.TestCase):
+    def test_preserves_input_order(self):
+        """완료 순서가 역순이어도 반환은 입력 순서여야 한다.
+
+        `index`가 정렬의 마지막 tiebreak이라, 여기가 흔들리면 화면 순서가 재현되지 않는다.
+        """
+
+        def slow(**kwargs):
+            time.sleep(0.30 - 0.05 * int(case_of(kwargs)[1:]))
+            return ok(**kwargs)
+
+        with patch("main_service.service.run_codex", side_effect=slow):
+            records = classify_emails(emails(5), max_workers=5, on_event=None)
+        self.assertEqual([r["case_id"] for r in records], [f"c{i}" for i in range(5)])
+        self.assertEqual([r["index"] for r in records], list(range(5)))
+
+    def test_runs_concurrently(self):
+        lock = threading.Lock()
+        live = peak = 0
+
+        def tracked(**kwargs):
+            nonlocal live, peak
+            with lock:
+                live += 1
+                peak = max(peak, live)
+            time.sleep(0.15)
+            with lock:
+                live -= 1
+            return ok(**kwargs)
+
+        with patch("main_service.service.run_codex", side_effect=tracked):
+            classify_emails(emails(6), max_workers=3)
+        self.assertGreater(peak, 1)
+        self.assertLessEqual(peak, 3)
+
+    def test_records_failure_without_aborting_the_batch(self):
+        def flaky(**kwargs):
+            if case_of(kwargs) == "c1":
+                raise CodexRunError("boom", kind="missing_cli")  # 재시도 대상 아님
+            return ok(**kwargs)
+
+        with patch("main_service.service.run_codex", side_effect=flaky):
+            records = classify_emails(emails(3), max_workers=3)
+        self.assertEqual([r["status"] for r in records], ["ok", "error", "ok"])
+        self.assertIn("boom", records[1]["error"])
+
+    def test_retries_a_retryable_failure_once(self):
+        calls: list[str] = []
+
+        def once(**kwargs):
+            case_id = case_of(kwargs)
+            calls.append(case_id)
+            if calls.count(case_id) == 1:
+                raise CodexRunError("timed out", kind="timeout")
+            return ok(**kwargs)
+
+        with patch("main_service.service.run_codex", side_effect=once):
+            records = classify_emails(emails(1), max_workers=1)
+        self.assertEqual(records[0]["status"], "ok")
+        self.assertEqual(records[0]["attempts"], 2)
+
+    def test_does_not_retry_a_non_retryable_failure(self):
+        calls: list[str] = []
+
+        def always(**kwargs):
+            calls.append(case_of(kwargs))
+            raise CodexRunError("no cli", kind="missing_cli")
+
+        with patch("main_service.service.run_codex", side_effect=always):
+            records = classify_emails(emails(1), max_workers=1)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(records[0]["attempts"], 1)
+
+    def test_emits_events_on_the_calling_thread(self):
+        """Streamlit 워커 스레드에는 ScriptRunContext가 없어 st.* 호출이 깨진다.
+
+        진행 표시를 그리는 콜백은 반드시 호출자 스레드에서 실행되어야 한다.
+        """
+        threads: set[int] = set()
+        states: list[str] = []
+
+        def record(event):
+            threads.add(threading.get_ident())
+            states.append(event["state"])
+
+        with patch("main_service.service.run_codex", side_effect=ok):
+            classify_emails(emails(4), max_workers=4, on_event=record)
+
+        self.assertEqual(threads, {threading.get_ident()})
+        self.assertEqual(states[0], "submitted")
+        self.assertEqual(len(states), 5)  # submitted + 4건
+
+    def test_unparsable_output_is_an_error_not_a_crash(self):
+        with patch(
+            "main_service.service.run_codex",
+            side_effect=lambda *a, **k: CodexResult(text="not json", parsed=None),
+        ):
+            records = classify_emails(emails(1))
+        self.assertEqual(records[0]["status"], "error")
+        self.assertEqual(records[0]["text"], "not json")
+
+    def test_empty_input_returns_empty(self):
+        self.assertEqual(classify_emails([]), [])
+
+    def test_workers_are_capped(self):
+        with patch("main_service.service.run_codex", side_effect=ok):
+            seen: list[int] = []
+            classify_emails(
+                emails(3), max_workers=99, on_event=lambda e: seen.append(e["workers"])
+            )
+        self.assertEqual(set(seen), {3})  # 메일 수와 MAX_PARALLEL 중 작은 쪽
+
+
+class ClassifyArgvTests(unittest.TestCase):
+    """tests/test_gmail_reader.py와 같은 방식으로 실제 argv를 확인한다."""
+
+    def test_sends_low_effort_and_priority_tier(self):
+        captured: dict[str, object] = {}
+
+        def fake(*args, **kwargs):
+            captured.update(kwargs)
+            return CodexResult(text="{}", parsed={"label": "공지"})
+
+        with patch("main_service.service.run_codex", side_effect=fake):
+            classify_emails(emails(1))
+        self.assertEqual(captured["reasoning_effort"], "low")
+        self.assertEqual(captured["service_tier"], "priority")
+        self.assertEqual(captured["skill"], "email-classifier")
+        self.assertEqual(captured["timeout_seconds"], 120)
+
+    def test_taxonomy_is_injected(self):
+        captured: dict[str, object] = {}
+
+        def fake(*args, **kwargs):
+            captured.update(kwargs)
+            return CodexResult(text="{}", parsed={"label": "공지"})
+
+        with patch("main_service.service.run_codex", side_effect=fake):
+            classify_emails(emails(1))
+        self.assertIn("구매 승인 요청", captured["payload"]["taxonomy"])
+        self.assertIn("urgency", captured["prompt"])
+
+
+if __name__ == "__main__":
+    unittest.main()
