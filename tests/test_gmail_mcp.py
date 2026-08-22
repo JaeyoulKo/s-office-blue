@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import queue
 import unittest
 from unittest.mock import patch
 
@@ -96,6 +97,18 @@ class FetchMessagesTests(unittest.TestCase):
         self.assertEqual(len(messages), 3)
         self.assertEqual(client.calls[0][1]["pageSize"], 3)
 
+    def test_requests_plain_text_thread_content(self):
+        client = FakeClient(
+            threads=[{"id": "t1"}],
+            thread_messages={"t1": [message("m1")]},
+        )
+        with run_with(client):
+            fetch_messages("is:unread", max_results=1)
+        self.assertEqual(
+            client.calls[1],
+            ("get_thread", {"threadId": "t1", "messageFormat": "PLAIN_TEXT"}),
+        )
+
     def test_rejects_empty_query_and_out_of_range_limits(self):
         with self.assertRaises(ValueError):
             fetch_messages("   ")
@@ -128,6 +141,33 @@ class SnapshotTests(unittest.TestCase):
     def test_falls_back_to_snippet_when_body_is_absent(self):
         payload = {k: v for k, v in message("m1").items() if k != "body"}
         self.assertEqual(_to_snapshot(payload)["body"], "요약")
+
+
+class CurrentGoogleSchemaTests(unittest.TestCase):
+    def test_accepts_current_google_gmail_field_names(self):
+        snapshot = _to_snapshot(
+            {
+                "id": "m1",
+                "threadId": "t1",
+                "sender": "sender@example.invalid",
+                "toRecipients": ["one@example.invalid", "two@example.invalid"],
+                "subject": "subject",
+                "plaintextBody": "body",
+                "date": "Mon, 17 Aug 2026 07:12:00 +0900",
+            }
+        )
+        self.assertEqual(snapshot["sender"], "sender@example.invalid")
+        self.assertEqual(snapshot["recipients"], ["one@example.invalid", "two@example.invalid"])
+        self.assertEqual(snapshot["body"], "body")
+
+
+class TimeoutTests(unittest.TestCase):
+    def test_read_raises_when_proxy_does_not_respond(self):
+        client = GmailClient.__new__(GmailClient)
+        client.timeout = 0.01
+        client._stdout_lines = queue.Queue()
+        with self.assertRaisesRegex(GmailError, "0.01초 안에 응답하지 않았습니다"):
+            client._read()
 
 
 class ReadOnlyTests(unittest.TestCase):

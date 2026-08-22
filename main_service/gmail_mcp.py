@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import re
 import shutil
 import subprocess
+import threading
 import tomllib
+from collections import deque
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
@@ -61,6 +64,8 @@ class GmailClient:
         env = {**os.environ, **{str(k): str(v) for k, v in (server.get("env") or {}).items()}}
         self.timeout = timeout_seconds
         self._next_id = 0
+        self._stdout_lines: queue.Queue[str | None] = queue.Queue()
+        self._stderr_tail: deque[str] = deque(maxlen=100)
         try:
             self.process = subprocess.Popen(
                 [resolved, *args],
@@ -76,6 +81,10 @@ class GmailClient:
             )
         except FileNotFoundError as exc:
             raise GmailError(f"MCP 서버를 실행할 수 없습니다: {resolved}") from exc
+        self._reader = threading.Thread(target=self._read_stdout, daemon=True)
+        self._stderr_reader = threading.Thread(target=self._drain_stderr, daemon=True)
+        self._reader.start()
+        self._stderr_reader.start()
         try:
             self._request(
                 "initialize",
@@ -89,6 +98,29 @@ class GmailClient:
         except Exception:
             self.close()
             raise
+
+    def _read_stdout(self) -> None:
+        """stdout을 daemon thread에서 읽어 Windows pipe에도 실제 timeout을 적용한다."""
+        stdout = self.process.stdout
+        if stdout is None:
+            self._stdout_lines.put(None)
+            return
+        try:
+            for line in stdout:
+                self._stdout_lines.put(line)
+        finally:
+            self._stdout_lines.put(None)
+
+    def _drain_stderr(self) -> None:
+        """프록시 로그 파이프가 차서 tools/call을 막지 않도록 계속 비운다."""
+        stderr = self.process.stderr
+        if stderr is None:
+            return
+        for line in stderr:
+            self._stderr_tail.append(line.rstrip())
+
+    def _stderr_summary(self) -> str:
+        return "\n".join(self._stderr_tail)[-1000:]
 
     def _request(self, method: str, params: dict[str, Any] | None = None) -> Any:
         self._next_id += 1
@@ -112,12 +144,17 @@ class GmailClient:
         self.process.stdin.flush()
 
     def _read(self) -> dict[str, Any]:
-        if self.process.stdout is None:
-            raise GmailError("Gmail MCP 서버 출력을 읽을 수 없습니다.")
-        line = self.process.stdout.readline()
-        if not line:
-            stderr = (self.process.stderr.read() if self.process.stderr else "") or ""
-            raise GmailError(f"Gmail MCP 서버가 응답하지 않았습니다. {stderr.strip()[-500:]}")
+        try:
+            line = self._stdout_lines.get(timeout=self.timeout)
+        except queue.Empty as exc:
+            raise GmailError(
+                f"Gmail MCP 서버가 {self.timeout}초 안에 응답하지 않았습니다. "
+                "로컬 MCP OAuth 또는 네트워크 연결을 확인하세요."
+            ) from exc
+        if line is None:
+            raise GmailError(
+                f"Gmail MCP 서버가 응답하지 않았습니다. {self._stderr_summary()[-500:]}"
+            )
         try:
             return json.loads(line)
         except json.JSONDecodeError as exc:
@@ -128,6 +165,9 @@ class GmailClient:
         if tool not in READ_ONLY_TOOLS:
             raise GmailError(f"읽기 전용 도구가 아닙니다: {tool}")
         result = self._request("tools/call", {"name": tool, "arguments": arguments})
+        structured = (result or {}).get("structuredContent")
+        if isinstance(structured, dict):
+            return structured
         content = (result or {}).get("content") or []
         text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
         if (result or {}).get("isError"):
@@ -141,17 +181,24 @@ class GmailClient:
         process = getattr(self, "process", None)
         if process is None:
             return
+        # 프록시가 살아 있는 동안 읽기 파이프를 먼저 닫으면 Windows에서 close가
+        # 대기할 수 있다. 프로세스를 먼저 끝낸 뒤 스트림을 정리한다.
+        try:
+            if process.poll() is None:
+                process.terminate()
+                process.wait(timeout=5)
+        except Exception:
+            process.kill()
+            try:
+                process.wait(timeout=5)
+            except Exception:
+                pass
         for stream in (process.stdin, process.stdout, process.stderr):
             try:
                 if stream is not None:
                     stream.close()
             except OSError:
                 pass
-        try:
-            process.terminate()
-            process.wait(timeout=5)
-        except Exception:
-            process.kill()
 
     def __enter__(self) -> GmailClient:
         return self
@@ -179,13 +226,19 @@ def _to_snapshot(message: dict[str, Any]) -> dict[str, Any]:
     return {
         "message_id": str(message.get("id") or ""),
         "thread_id": str(message.get("threadId") or ""),
-        "sender": str(message.get("from") or ""),
-        "recipients": _addresses(str(message.get("to") or "")),
+        "sender": str(message.get("from") or message.get("sender") or ""),
+        "recipients": _recipient_addresses(message.get("to") or message.get("toRecipients")),
         "subject": str(message.get("subject") or ""),
-        "body": str(message.get("body") or message.get("snippet") or ""),
+        "body": str(message.get("body") or message.get("plaintextBody") or message.get("snippet") or ""),
         "received_at": _iso_date(str(message.get("date") or "")),
         "attachments": [],
     }
+
+
+def _recipient_addresses(raw: Any) -> list[str]:
+    if isinstance(raw, list):
+        return [str(value).strip() for value in raw if str(value).strip()]
+    return _addresses(str(raw or ""))
 
 
 def fetch_messages(
@@ -212,7 +265,9 @@ def fetch_messages(
             if not thread_id:
                 continue
             try:
-                detail = client.call("get_thread", {"threadId": thread_id, "view": "full"})
+                detail = client.call(
+                    "get_thread", {"threadId": thread_id, "messageFormat": "PLAIN_TEXT"}
+                )
             except GmailError as exc:
                 errors.append({"where": f"get_thread({thread_id})", "reason": str(exc)})
                 continue
