@@ -5,7 +5,7 @@
 - 실험용 Skill 경로: `dev/03-discussion-email-review/work/skills/`
 - A/B 실험 경로: `experiments/ablation/skill_ab_test/`
 - 입력: 분류 결과, 이메일 스레드, 접근 가능한 첨부파일
-- 승격 대상: `skills/discussion-email-review/`
+- 승격 대상: `skills/email-archive-agent/`
 - 결정된 내용: 개발 중인 Skill의 소유 작업은 `dev/03-discussion-email-review/`로 두고,
   고유 이름은 `email-archive-agent`로 유지한다. A/B 비교 코드는 실험 정의 경로에 둔다.
 - 미결 사항: 검토 완료 후 승인 Skill로 승격할지와 최종 승격 경로는 별도로 결정한다.
