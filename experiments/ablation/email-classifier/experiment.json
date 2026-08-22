@@ -5,12 +5,18 @@
   "prompt": "prompt.md",
   "model": "gpt-5.4",
   "reasoning_effort": "low",
+  "service_tier": "priority",
+  "condition_timeout_seconds": 150,
   "input_key": "email",
   "context": {
     "taxonomy": "shared/taxonomy.md"
   },
   "cases": [
-    "data/synthetic/emails/purchase-request.json",
+    "data/synthetic/emails/purchase-email-review.json",
+    "data/synthetic/emails/pr-resubmission.json",
+    "data/synthetic/emails/discussion-email.json",
+    "data/synthetic/emails/discussion-email-amount-escalation.json",
+    "data/synthetic/emails/discussion-email-urgency-edge.json",
     "data/synthetic/emails/maintenance-notice.json"
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "name": "purchase-email-review-ablation",
+  "data_source": "local_synthetic",
+  "treatment_skill": "purchase-email-review",
+  "treatment_skill_path": "dev/07-purchase-skill-contrast/work/purchase-email-review",
+  "prompt": "prompt.md",
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "service_tier": "priority",
+  "condition_timeout_seconds": 150,
+  "input_key": "email",
+  "cases": [
+    "data/synthetic/emails/purchase-review-complex.json"
+  ]
+}

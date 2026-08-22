@@ -1,0 +1,47 @@
+{
+  "case_id": "discussion-urgency-edge-001",
+  "difficulty": "edge_case",
+  "title": "상속된 URGENT 승인 제목과 최신 비긴급 논의의 충돌",
+  "messages": [
+    {
+      "message_id": "due01-m1",
+      "thread_id": "thread-due01",
+      "from": "김유진 <yujin.kim@mirinae-logis.example>",
+      "to": ["투자심의 <investment@mirinae-logis.example>"],
+      "cc": ["Finance <finance@mirinae-logis.example>"],
+      "date": "2026-08-05T09:10:00+09:00",
+      "subject": "[URGENT][Action Required] Approve 남부센터 냉동창고 증설 - 300,000,000 KRW",
+      "body": "남부센터 냉동창고 증설을 위해 3억원 투자를 승인 부탁드립니다. 당시 공급사는 프리즈원이며 9월 착공을 전제로 작성했습니다. 오늘 심의 안건에 포함되어 있어 제목에 URGENT를 사용했습니다."
+    },
+    {
+      "message_id": "due01-m2",
+      "thread_id": "thread-due01",
+      "from": "박정민 <jungmin.park@mirinae-logis.example>",
+      "to": ["김유진 <yujin.kim@mirinae-logis.example>"],
+      "cc": ["Finance <finance@mirinae-logis.example>"],
+      "date": "2026-08-05T16:30:00+09:00",
+      "subject": "RE: [URGENT][Action Required] Approve 남부센터 냉동창고 증설 - 300,000,000 KRW",
+      "body": "오늘 회의에서 3억원 안을 승인했습니다. 다만 소방 설계 변경이 발생하면 변경 범위와 금액을 다시 정리해 공유해 주세요."
+    },
+    {
+      "message_id": "due01-m3",
+      "thread_id": "thread-due01",
+      "from": "김유진 <yujin.kim@mirinae-logis.example>",
+      "to": ["Finance <finance@mirinae-logis.example>", "시설팀 <facility@mirinae-logis.example>"],
+      "cc": ["투자심의 <investment@mirinae-logis.example>"],
+      "date": "2026-08-12T13:20:00+09:00",
+      "subject": "RE: [URGENT][Action Required] Approve 남부센터 냉동창고 증설 - 조건 변경",
+      "body": "소방 구획 추가로 공급 범위와 후보 업체를 다시 비교하고 있습니다. 프리즈원 수정안은 3억 1,500만원이고 콜드테크 대안은 3억 800만원입니다. 아직 공급사와 실행 금액을 확정하지 않았으며, 기존 승인을 어느 안에 적용할 수 있는지도 논의가 필요합니다. 새 승인 요청은 최종안 확정 후 별도로 상신하겠습니다."
+    },
+    {
+      "message_id": "due01-m4",
+      "thread_id": "thread-due01",
+      "from": "이서현 <seohyun.lee@mirinae-logis.example>",
+      "to": ["김유진 <yujin.kim@mirinae-logis.example>", "Finance <finance@mirinae-logis.example>"],
+      "cc": ["시설팀 <facility@mirinae-logis.example>"],
+      "date": "2026-08-14T10:05:00+09:00",
+      "subject": "RE: [URGENT][Action Required] Approve 남부센터 냉동창고 증설 - 조건 변경",
+      "body": "제목의 URGENT와 Action Required는 8월 5일 최초 승인 메일에서 상속된 표현입니다. 현재 즉시 승인하거나 처리할 요청은 없습니다. 9월 30일 투자심의 전까지 두 업체의 소방 설계 범위, 보증 조건, 최종 금액을 비교하기 위한 논의 스레드로 사용해 주세요. 시스템에 남아 있는 3억원 승인 상태를 어느 수정안에 대한 승인으로 해석하면 안 됩니다. 다음 회의 자료가 완성되면 별도의 승인 요청을 발송하겠습니다."
+    }
+  ]
+}
