@@ -389,6 +389,17 @@ class TaxonomyTests(unittest.TestCase):
         self.assertEqual(taxonomy, rules)
         self.assertEqual(taxonomy, set(LABELS))
 
+    def test_single_label_precedence_covers_changed_thread_before_approval(self):
+        taxonomy = (PROJECT_ROOT / "shared/taxonomy.md").read_text(encoding="utf-8")
+        rules = (
+            PROJECT_ROOT / "skills/email-classifier/references/decision-rules.md"
+        ).read_text(encoding="utf-8")
+        for text in (taxonomy, rules):
+            self.assertIn("이전 값과 최신 값이 실제로 달라졌다면", text)
+            self.assertIn("승인·예산 집행 요청", text)
+            self.assertIn("`논의 내용 요약 필요 이메일`로 분류", text)
+            self.assertIn("단일 메시지이거나 해당 변경 이력이 없고", text)
+
 
 if __name__ == "__main__":
     unittest.main()
