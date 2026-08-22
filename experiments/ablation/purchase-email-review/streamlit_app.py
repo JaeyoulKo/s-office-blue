@@ -13,11 +13,19 @@ from typing import Callable
 import pandas as pd
 import streamlit as st
 
+from approval_excel import PurchaseApprovalExcelStore, READY_STATUS
+
 ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENT = "purchase-email-review"
 EXPERIMENT_DIR = Path(__file__).resolve().parent
 RUNNER = Path(__file__).resolve().parent.parent / "run.py"
 UPLOAD_DIR = ROOT / "experiments" / "instances" / ".uploads"
+EXCEL_EXPORT_ROOT = ROOT / "experiments" / "instances"
+EXCEL_EXPORT_PATH = (
+    EXCEL_EXPORT_ROOT
+    / "purchase_approval_exports"
+    / "approved_purchase_emails.xlsx"
+)
 
 
 def normalize_email(data: dict[str, object]) -> dict[str, object]:
@@ -256,6 +264,40 @@ def render_draft(draft: object) -> None:
         st.markdown(as_text(draft))
 
 
+def render_approval_excel_controls(email: dict[str, object], treatment_result: object) -> None:
+    """승인 가능한 A 결과를 누적 Excel에 자동 저장하고 다운로드를 제공한다."""
+    store = PurchaseApprovalExcelStore(EXCEL_EXPORT_PATH, EXCEL_EXPORT_ROOT)
+    eligible = (
+        isinstance(treatment_result, dict)
+        and treatment_result.get("review_status") == READY_STATUS
+    )
+    if eligible:
+        try:
+            row_number, created = store.append_approved_email(email, treatment_result)
+        except Exception as exc:
+            st.error(f"승인 가능 이메일을 Excel에 저장하지 못했습니다: {exc}")
+        else:
+            if created:
+                st.success(f"승인 가능 이메일을 Excel {row_number}번째 행에 자동 저장했습니다.")
+            else:
+                st.info(f"이 승인 가능 이메일은 Excel {row_number}번째 행에 이미 저장되어 있습니다.")
+    else:
+        st.info("A 결과가 승인 가능일 때만 별도 Excel에 자동 저장됩니다.")
+
+    try:
+        workbook_bytes = store.read_bytes()
+    except Exception as exc:
+        st.error(f"누적 Excel 파일을 다운로드할 수 없습니다: {exc}")
+        return
+    if workbook_bytes is not None:
+        st.download_button(
+            "승인 가능 이메일 Excel 다운로드",
+            data=workbook_bytes,
+            file_name=EXCEL_EXPORT_PATH.name,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+
 def render_result(title: str, caption: str, result: object) -> None:
     st.markdown(f"### {title}")
     st.caption(caption)
@@ -375,9 +417,11 @@ def main() -> None:
                 "recipients": st.session_state.get("email_recipients", []),
                 "subject": subject,
                 "body": body,
+                "received_at": st.session_state.get("email_received_at") or "",
                 "attachments": st.session_state.get("email_attachments", []),
                 "approval_url": approval_url,
             }
+            st.session_state.purchase_review_email = email
             with st.status("A와 B를 동시에 실행합니다...", expanded=True) as run_status:
                 slots = {"treatment": st.empty(), "baseline": st.empty()}
                 labels = {"treatment": "A · Skill 적용", "baseline": "B · Skill 미적용"}
@@ -415,11 +459,21 @@ def main() -> None:
     st.divider()
     st.header("A/B 비교 결과")
     st.caption(f"{run_dir.name} · {config['model']} · reasoning {config['reasoning_effort']}")
+    treatment_result = load_result(run_dir, "treatment")
+    baseline_result = load_result(run_dir, "baseline")
     a_col, b_col = st.columns(2)
     with a_col:
-        render_result("A · Skill 적용", "개발 작업본의 4대 필수항목 규칙 적용", load_result(run_dir, "treatment"))
+        render_result("A · Skill 적용", "개발 작업본의 4대 필수항목 규칙 적용", treatment_result)
     with b_col:
-        render_result("B · Skill 미적용", "동일 모델의 일반 LLM 검토", load_result(run_dir, "baseline"))
+        render_result("B · Skill 미적용", "동일 모델의 일반 LLM 검토", baseline_result)
+
+    st.divider()
+    st.subheader("승인 가능 이메일 Excel")
+    current_email = st.session_state.get("purchase_review_email")
+    if isinstance(current_email, dict):
+        render_approval_excel_controls(current_email, treatment_result)
+    else:
+        st.info("현재 실행에 사용된 이메일을 확인할 수 없습니다.")
 
 
 if __name__ == "__main__":

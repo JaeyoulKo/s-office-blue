@@ -14,6 +14,7 @@ dependencies = []
 # st.badge와 :color-badge[] 마크다운은 1.45, st.segmented_control은 1.40에 들어왔다.
 ui = [
   'streamlit>=1.45,<2',
+  'openpyxl>=3.1,<4',
   'google-api-python-client>=2.199,<3',
   'google-auth-oauthlib>=1.4,<2',
   'google-auth-httplib2>=0.4,<1',
