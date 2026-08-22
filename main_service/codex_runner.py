@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
-from .skill_registry import resolve_skill
+from .skill_registry import PROJECT_ROOT, resolve_skill
 
 
 class CodexRunError(RuntimeError):
@@ -86,6 +89,25 @@ def copy_tree_for_codex(source: Path, destination: Path) -> None:
         write_for_codex(path, text)
 
 
+@contextmanager
+def temporary_workspace():
+    """Yield an ephemeral workspace readable by the active Codex sandbox."""
+    if os.name != "nt":
+        with tempfile.TemporaryDirectory(prefix="office-blue-") as temp_name:
+            yield Path(temp_name)
+        return
+
+    # tempfile creates Windows directories with restrictive permissions that the
+    # unelevated Codex token cannot inherit. Path.mkdir uses the trusted project's
+    # normal inherited ACL, while a random name preserves per-run isolation.
+    workspace = PROJECT_ROOT / f".office-blue-run-{uuid4().hex}"
+    workspace.mkdir()
+    try:
+        yield workspace
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
 @dataclass(frozen=True)
 class CodexResult:
     text: str
@@ -111,6 +133,30 @@ def codex_version() -> str:
     return completed.stdout.strip() if completed.returncode == 0 else "unavailable"
 
 
+def _base_codex_command(workspace: Path, output_path: Path) -> list[str]:
+    command = [
+        "codex",
+        "exec",
+        "--ephemeral",
+        "--ignore-user-config",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--output-last-message",
+        str(output_path),
+        "--cd",
+        str(workspace),
+    ]
+    # `--ignore-user-config` intentionally isolates service runs from personal
+    # model/MCP settings, but on Windows it also drops the sandbox backend from
+    # config.toml. The default restricted-token backend can then block even
+    # read-only Get-Content calls, so restore only the Windows backend needed to
+    # read input.json and the selected Skill.
+    if os.name == "nt":
+        command.extend(["--config", 'windows.sandbox="unelevated"'])
+    return command
+
+
 def run_codex(
     *,
     prompt: str,
@@ -129,8 +175,7 @@ def run_codex(
     `service_tier="priority"` buys latency with quota: same model and output, but
     the request is processed ahead of the default queue.
     """
-    with tempfile.TemporaryDirectory(prefix="office-blue-") as temp_name:
-        workspace = Path(temp_name)
+    with temporary_workspace() as workspace:
         write_for_codex(
             workspace / "input.json",
             json.dumps(payload, ensure_ascii=False, indent=2),
@@ -153,19 +198,7 @@ def run_codex(
         write_for_codex(workspace / "AGENTS.md", agents_md)
 
         output_path = workspace / "last-message.txt"
-        command = [
-            "codex",
-            "exec",
-            "--ephemeral",
-            "--ignore-user-config",
-            "--sandbox",
-            "read-only",
-            "--skip-git-repo-check",
-            "--output-last-message",
-            str(output_path),
-            "--cd",
-            str(workspace),
-        ]
+        command = _base_codex_command(workspace, output_path)
         if model:
             command.extend(["--model", model])
         if reasoning_effort:
