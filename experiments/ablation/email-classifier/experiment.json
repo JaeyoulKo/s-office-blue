@@ -7,6 +7,12 @@
   "reasoning_effort": "low",
   "service_tier": "priority",
   "condition_timeout_seconds": 150,
+  "allowed_labels": [
+    "구매 승인 검토 필요 이메일",
+    "논의 내용 요약 필요 이메일",
+    "일반 이메일"
+  ],
+  "max_contract_retries": 1,
   "input_key": "email",
   "context": {
     "taxonomy": "shared/taxonomy.md"
