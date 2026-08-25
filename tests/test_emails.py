@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import re
 import unittest
+from email.utils import parseaddr
 from pathlib import Path
 
 from main_service.emails import (
@@ -202,6 +203,14 @@ class InboxTests(unittest.TestCase):
         """`has_data: false`를 플래그로 넘기지 않고 본문에 적어 모델이 읽게 한다."""
         bodies = [e["body"] for e in load_inbox(SAMPLE)]
         self.assertTrue(any("기재되지 않음" in body for body in bodies))
+
+    def test_purchase_review_fixtures_have_replyable_requesters(self):
+        """구매 검토 fixture는 Gmail 초안 수신인으로 쓸 요청자 주소를 보존한다."""
+        for email in load_inbox(SAMPLE):
+            address = parseaddr(email["sender"])[1]
+            self.assertTrue(address.endswith("@example.invalid"), email["case_id"])
+            self.assertEqual(email["recipients"], ["buyer@example.invalid"])
+            self.assertIn(f"요청자 이메일: {address}", email["body"])
 
     def test_codex_payload_carries_only_email_fields(self):
         from main_service.emails import for_codex
