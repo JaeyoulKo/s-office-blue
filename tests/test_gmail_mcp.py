@@ -10,6 +10,7 @@ from main_service.gmail_mcp import (
     READ_ONLY_TOOLS,
     GmailClient,
     GmailError,
+    _server_environment,
     _to_snapshot,
     fetch_messages,
 )
@@ -168,6 +169,18 @@ class TimeoutTests(unittest.TestCase):
         client._stdout_lines = queue.Queue()
         with self.assertRaisesRegex(GmailError, "0.01초 안에 응답하지 않았습니다"):
             client._read()
+
+
+class ServerEncodingTests(unittest.TestCase):
+    def test_child_process_uses_utf8_for_figure_space_in_gmail_content(self):
+        env = _server_environment({})
+        self.assertEqual(env["PYTHONUTF8"], "1")
+        self.assertEqual(env["PYTHONIOENCODING"], "utf-8")
+        self.assertEqual("금액 1\u2007000원".encode(env["PYTHONIOENCODING"]).decode("utf-8"), "금액 1\u2007000원")
+
+    def test_explicit_server_environment_can_override_defaults(self):
+        env = _server_environment({"env": {"PYTHONIOENCODING": "utf-8:strict"}})
+        self.assertEqual(env["PYTHONIOENCODING"], "utf-8:strict")
 
 
 class ReadOnlyTests(unittest.TestCase):

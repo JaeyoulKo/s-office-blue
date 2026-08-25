@@ -39,6 +39,16 @@ class GmailError(RuntimeError):
     """Gmail MCP 호출이 실패했다."""
 
 
+def _server_environment(server: dict[str, Any]) -> dict[str, str]:
+    """Windows에서도 MCP의 JSON-RPC 표준 입출력을 UTF-8로 고정한다."""
+    return {
+        **os.environ,
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        **{str(k): str(v) for k, v in (server.get("env") or {}).items()},
+    }
+
+
 def _server_config() -> dict[str, Any]:
     if not CONFIG_PATH.is_file():
         raise GmailError(f"Codex 설정을 찾을 수 없습니다: {CONFIG_PATH}")
@@ -61,7 +71,7 @@ class GmailClient:
             raise GmailError("Gmail MCP 서버 설정에 command가 없습니다.")
         resolved = shutil.which(command) or command
         args = [str(a) for a in (server.get("args") or [])]
-        env = {**os.environ, **{str(k): str(v) for k, v in (server.get("env") or {}).items()}}
+        env = _server_environment(server)
         self.timeout = timeout_seconds
         self._next_id = 0
         self._stdout_lines: queue.Queue[str | None] = queue.Queue()

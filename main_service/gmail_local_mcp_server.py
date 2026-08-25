@@ -14,6 +14,13 @@ from googleapiclient.discovery import build
 from main_service.gmail_api import _body, _credentials, _headers
 
 
+# JSON-RPC는 UTF-8이다. Windows 콘솔의 기본 CP949로는 figure space(U+2007) 같은
+# 정상적인 Gmail 본문 문자를 출력할 수 없으므로 서버 자체에서도 한 번 더 고정한다.
+for stream in (sys.stdin, sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
+
+
 TOOLS = [
     {
         "name": "search_threads",
