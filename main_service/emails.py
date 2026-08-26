@@ -197,8 +197,16 @@ def _ariba_record_to_email(data: dict[str, Any]) -> dict[str, Any]:
     cost = data.get("cost_breakdown") if isinstance(data.get("cost_breakdown"), dict) else {}
     effects = data.get("expected_effects") if isinstance(data.get("expected_effects"), dict) else {}
     requester = str(data.get("requester") or "").strip()
+    requester_email = str(data.get("requester_email") or "").strip()
     pr_number = str(data.get("pr_number") or "").strip()
     missing = "기재되지 않음"
+
+    sender = str(data.get("sender") or data.get("from") or "").strip()
+    if not sender and requester_email:
+        sender = f"{requester} <{requester_email}>" if requester else requester_email
+    if not sender:
+        sender = f"{requester} (Ariba)" if requester else "Ariba 구매 시스템"
+    recipients = data.get("recipients") or data.get("to") or []
 
     lines = [
         "안녕하세요,",
@@ -206,6 +214,8 @@ def _ariba_record_to_email(data: dict[str, Any]) -> dict[str, Any]:
         f"{requester or '요청자'}님이 제출한 구매 요청({pr_number or '번호 미상'})에 대한 "
         "승인 검토가 필요합니다.",
         "",
+        f"- 요청자: {requester or missing}",
+        f"- 요청자 이메일: {requester_email or missing}",
         f"- 공급업체: {data.get('vendor') or missing}",
         f"- 구매 유형: {data.get('type') or missing}",
         f"- 총액: {data.get('total_amount') or missing}",
@@ -222,8 +232,8 @@ def _ariba_record_to_email(data: dict[str, Any]) -> dict[str, Any]:
         "case_id": pr_number or str(data.get("id") or "email"),
         "message_id": f"ariba-{data.get('id')}" if data.get("id") else "",
         "thread_id": f"ariba-{pr_number}" if pr_number else "",
-        "sender": f"{requester} (Ariba)" if requester else "Ariba 구매 시스템",
-        "recipients": [],
+        "sender": sender,
+        "recipients": recipients,
         "subject": str(data.get("email_subject") or ""),
         "body": "\n".join(lines),
         # 실제 메일에는 항상 날짜가 있다. 테스트 데이터가 주면 쓰고, 없으면 비워 둔다.

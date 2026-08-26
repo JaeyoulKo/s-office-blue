@@ -57,8 +57,10 @@ from main_service.service import (
     classify_emails,
     draft_replies,
     fetch_inbox,
+    purchase_draft_fingerprint,
     review_discussion_email,
     review_purchase_email,
+    save_purchase_review_draft,
     supported_labels,
 )
 from main_service.skill_registry import PROJECT_ROOT
@@ -426,7 +428,11 @@ def render_fold_list(items: list[dict[str, Any]], settings: dict[str, Any]) -> N
                 if record is not None:
                     # 어떻게 처리했는지가 이 메일에서 가장 궁금한 부분이라 위에 둔다.
                     st.markdown(f"**처리 결과** · {record.get('skill', '')}")
-                    render_draft(record)
+                    render_draft(
+                        record,
+                        save_draft=save_purchase_review_draft,
+                        draft_fingerprint=purchase_draft_fingerprint,
+                    )
                 # 원본 메일은 그 안에서 한 번 더 접어 둔다. 기본은 접힌 상태다.
                 with st.expander("📧 원본 메일 보기", expanded=False):
                     render_original_email(item)
@@ -472,7 +478,11 @@ def render_pick_tab(inbox: list[dict[str, Any]], settings: dict[str, Any]) -> No
             continue
         with st.expander(f"{item_header(item)}", expanded=False):
             st.caption(f"{record.get('skill', '')} · {record.get('action', '')}")
-            render_draft(record)
+            render_draft(
+                record,
+                save_draft=save_purchase_review_draft,
+                draft_fingerprint=purchase_draft_fingerprint,
+            )
 
 
 def start_reply_batch(items: list[dict[str, Any]], settings: dict[str, Any]) -> None:
