@@ -11,9 +11,12 @@ from main_service.archive_result import (
 )
 from main_service.codex_runner import CodexResult, CodexRunError
 from main_service.service import (
+    RECIPIENT_ERROR,
     archive_discussion_email,
     archive_discussion_emails,
     classify_emails,
+    purchase_draft_fingerprint,
+    save_purchase_review_draft,
 )
 from main_service.skill_registry import resolve_skill
 
@@ -29,6 +32,39 @@ def case_of(kwargs) -> str:
 
 def ok(**kwargs) -> CodexResult:
     return CodexResult(text="{}", parsed={"label": "일반 이메일", "case_id": case_of(kwargs)})
+
+
+class PurchaseDraftTests(unittest.TestCase):
+    def test_saves_current_edited_fields_once_through_gmail_boundary(self):
+        with patch("main_service.service.create_draft", return_value={"draftId": "internal"}) as create:
+            result = save_purchase_review_draft(
+                to="담당자 <edited@example.com>",
+                cc="copy@example.com",
+                bcc="hidden@example.com",
+                subject="수정한 제목",
+                body="사용자가 수정한 최신 본문",
+            )
+        create.assert_called_once_with(
+            to=["edited@example.com"],
+            cc=["copy@example.com"],
+            bcc=["hidden@example.com"],
+            subject="수정한 제목",
+            body="사용자가 수정한 최신 본문",
+        )
+        self.assertEqual(result, {"draftId": "internal"})
+
+    def test_blocks_recipient_name_without_address(self):
+        with patch("main_service.service.create_draft") as create:
+            with self.assertRaisesRegex(ValueError, RECIPIENT_ERROR):
+                save_purchase_review_draft(to="구매 담당자", subject="제목", body="본문")
+        create.assert_not_called()
+
+    def test_fingerprint_changes_only_when_current_edit_changes(self):
+        first = purchase_draft_fingerprint(to="a@example.com", subject="제목", body="본문")
+        same = purchase_draft_fingerprint(to="a@example.com", subject="제목", body="본문")
+        edited = purchase_draft_fingerprint(to="a@example.com", subject="제목", body="수정 본문")
+        self.assertEqual(first, same)
+        self.assertNotEqual(first, edited)
 
 
 class ClassifyEmailsTests(unittest.TestCase):

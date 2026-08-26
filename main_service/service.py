@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import random
+import re
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from email.utils import getaddresses
 from typing import Any, Callable, Sequence
 
 from .archive_result import (
@@ -15,7 +19,7 @@ from .archive_result import (
 from .codex_runner import CodexResult, CodexRunError, codex_version, run_codex
 from .emails import for_codex, normalize_email
 from .gmail_mcp import DEFAULT_QUERY as GMAIL_DEFAULT_QUERY
-from .gmail_mcp import fetch_messages
+from .gmail_mcp import create_draft, fetch_messages
 from .replies import can_reply, extract_draft, reply_route, supported_labels
 from .skill_registry import PROJECT_ROOT
 
@@ -86,6 +90,47 @@ def fetch_inbox(
         email["index"] = index
         inbox.append(email)
     return inbox, errors
+
+
+RECIPIENT_ERROR = "받는 사람의 이메일 주소를 확인할 수 없어 임시보관함에 저장하지 못했습니다."
+
+
+def _email_addresses(value: str | Sequence[str] | None) -> list[str]:
+    """표시 이름을 버리고 실제 주소만 반환한다. 이름뿐인 값은 받지 않는다."""
+    if value is None:
+        return []
+    values = [value] if isinstance(value, str) else [str(item) for item in value]
+    addresses: list[str] = []
+    for _name, address in getaddresses(values):
+        address = address.strip()
+        if re.fullmatch(r"[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+", address):
+            addresses.append(address)
+    return addresses
+
+
+def purchase_draft_fingerprint(
+    *, to: str, subject: str, body: str, cc: str = "", bcc: str = ""
+) -> str:
+    """현재 화면 편집본의 중복 Draft 생성을 막는 비가역 식별자."""
+    payload = {"to": to, "cc": cc, "bcc": bcc, "subject": subject, "body": body}
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def save_purchase_review_draft(
+    *, to: str, subject: str, body: str, cc: str = "", bcc: str = ""
+) -> dict[str, Any]:
+    """검토 화면의 최신 편집본을 Gmail Draft로 저장한다. 발송·재시도는 하지 않는다."""
+    recipients = _email_addresses(to)
+    if not recipients:
+        raise ValueError(RECIPIENT_ERROR)
+    return create_draft(
+        to=recipients,
+        cc=_email_addresses(cc) or None,
+        bcc=_email_addresses(bcc) or None,
+        subject=subject,
+        body=body,
+    )
 
 
 def classify_email(
