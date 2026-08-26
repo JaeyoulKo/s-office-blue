@@ -216,13 +216,17 @@ def _ariba_record_to_email(data: dict[str, Any]) -> dict[str, Any]:
         "",
         f"- 요청자: {requester or missing}",
         f"- 요청자 이메일: {requester_email or missing}",
+        f"- 요청 부서: {data.get('requesting_department') or missing}",
         f"- 공급업체: {data.get('vendor') or missing}",
         f"- 구매 유형: {data.get('type') or missing}",
         f"- 총액: {data.get('total_amount') or missing}",
         f"- 요청 내용: {data.get('description') or missing}",
+        f"- 계약/적용 기간: {data.get('contract_period') or missing}",
         "",
         f"비용 산출 근거: {cost.get('details') or missing}",
         f"예상 정량 효과: {effects.get('details') or missing}",
+        f"이전 유사 계약과의 차이: {data.get('previous_contract_comparison') or missing}",
+        f"승인 검토 URL: {data.get('approval_url') or missing}",
     ]
     if data.get("recent_comments"):
         lines += ["", "[최근 의견]", str(data["recent_comments"])]
@@ -300,7 +304,7 @@ def for_codex(email: dict[str, Any]) -> dict[str, Any]:
 def load_sources() -> list[tuple[Path, str, int]]:
     """`data/synthetic/emails/` 아래 모든 JSON을 찾는다.
 
-    `rglob`인 것이 중요하다. 기존 UI는 비재귀 `glob`을 써서 30건짜리
+    `rglob`인 것이 중요하다. 기존 UI는 비재귀 `glob`을 써서 구매 검토 샘플
     `purchase-email-review/purchase-review-email-sample.json`이 목록에 아예 없었다.
     """
     sources: list[tuple[Path, str, int]] = []
