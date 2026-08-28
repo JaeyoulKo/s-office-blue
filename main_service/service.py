@@ -24,7 +24,7 @@ from .skill_registry import PROJECT_ROOT
 DEFAULT_MAX_WORKERS = 16
 MAX_PARALLEL = 16
 CLASSIFY_TIMEOUT_SECONDS = 120
-# 회신 초안은 분류보다 훨씬 무겁다. 구매 검토는 네 항목 판정에 이전 계약 조회까지 한다.
+# 회신 초안은 분류보다 훨씬 무겁다. 구매 검토는 세 필수 항목을 상세 판정한다.
 REPLY_TIMEOUT_SECONDS = 240
 CLASSIFY_REASONING_EFFORT = "low"
 CLASSIFY_SERVICE_TIER = "priority"
