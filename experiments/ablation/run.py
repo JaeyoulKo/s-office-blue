@@ -156,7 +156,6 @@ def main() -> None:
                 current_prompt = contract_retry_prompt(prompt, contract_error)
             save_result(run_dir / condition, result)
             error = None
-            emit(condition, "completed")
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
             error_dir = run_dir / condition

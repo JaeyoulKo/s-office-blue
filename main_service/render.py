@@ -10,7 +10,7 @@ pandas도 쓰지 않는다. `st.dataframe`은 `list[dict]`를 그대로 받는�
 from __future__ import annotations
 
 import re
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import streamlit as st
 
@@ -339,7 +339,12 @@ ROW_STYLE = """
 """
 
 
-def render_draft(record: dict[str, Any]) -> None:
+def render_draft(
+    record: dict[str, Any],
+    *,
+    save_draft: Callable[..., dict[str, Any]] | None = None,
+    draft_fingerprint: Callable[..., str] | None = None,
+) -> None:
     """회신 초안 하나. 본문은 편집 가능한 text_area로 두되 발송은 하지 않는다."""
     if record["status"] == "error":
         st.error(record.get("error") or "초안을 만들지 못했습니다.")
@@ -360,15 +365,57 @@ def render_draft(record: dict[str, Any]) -> None:
             st.info("이 건에는 보낼 초안이 없습니다.")
         return
 
-    if draft.get("to"):
-        st.markdown(f"**받는 사람** {draft['to']}")
-    if draft.get("subject"):
-        st.markdown(f"**제목** {draft['subject']}")
-    st.text_area(
-        "본문", value=draft["body"], height=260,
-        key=f"draft_body_{record['case_id']}", label_visibility="collapsed",
+    case_id = record["case_id"]
+    to = st.text_input("받는 사람", value=str(draft.get("to") or ""), key=f"draft_to_{case_id}")
+    subject = st.text_input(
+        "제목", value=str(draft.get("subject") or ""), key=f"draft_subject_{case_id}"
     )
-    st.caption("초안입니다. 검토 후 직접 발송하세요. 이 화면은 메일을 보내지 않습니다.")
+    cc = bcc = ""
+    if draft.get("cc"):
+        cc = st.text_input("참조", value=str(draft["cc"]), key=f"draft_cc_{case_id}")
+    if draft.get("bcc"):
+        bcc = st.text_input("숨은 참조", value=str(draft["bcc"]), key=f"draft_bcc_{case_id}")
+    body = st.text_area(
+        "본문", value=draft["body"], height=260,
+        key=f"draft_body_{case_id}", label_visibility="collapsed",
+    )
+
+    if save_draft is None or draft_fingerprint is None:
+        st.caption("초안입니다. 검토 후 직접 발송하세요. 이 화면은 메일을 보내지 않습니다.")
+        return
+
+    fingerprint = draft_fingerprint(to=to, cc=cc, bcc=bcc, subject=subject, body=body)
+    saved: set[str] = st.session_state.setdefault("gmail_draft_fingerprints", set())
+    already_saved = fingerprint in saved
+    synthetic = any(
+        address.strip().lower().endswith(".invalid")
+        for field in (to, cc, bcc)
+        for address in re.findall(r"[^\s,;<>]+@[^\s,;<>]+", field)
+    )
+    if synthetic:
+        st.warning(
+            "합성 주소(example.invalid)가 포함되어 있습니다. "
+            "실제 Gmail Draft 저장 전에 주소를 확인하세요."
+        )
+
+    note, action = st.columns([3, 1], vertical_alignment="center")
+    note.caption("초안입니다. 검토 후 직접 발송하세요. 이 화면은 메일을 보내지 않습니다.")
+    clicked = action.button(
+        "✅ 임시보관함 저장 완료" if already_saved else "✅ 검토 완료",
+        key=f"save_gmail_draft_{case_id}_{fingerprint}",
+        disabled=already_saved,
+        help="검토한 회신을 Gmail Draft로 저장합니다",
+        width="stretch",
+    )
+    if clicked:
+        with st.spinner("Gmail 임시보관함에 저장 중…"):
+            try:
+                save_draft(to=to, cc=cc, bcc=bcc, subject=subject, body=body)
+            except Exception as exc:  # noqa: BLE001 - 자동 재시도 없이 사용자에게만 알린다
+                st.error(str(exc) or "Gmail 임시보관함에 저장하지 못했습니다.")
+            else:
+                saved.add(fingerprint)
+                st.success("Gmail 임시보관함에 저장되었습니다. 아직 발송되지 않았습니다.")
 
 
 def render_failures(failures: Sequence[dict[str, Any]]) -> None:
@@ -409,7 +456,7 @@ STAGE_VIEW: dict[str, tuple[str, str]] = {
     "todo": ("📌 회신 검토 필요", "회신 메일을 만들 수 있는 건입니다. 눌러서 선택하세요."),
     "done": ("✅ 회신 검토 완료", "펼치면 어떻게 처리했는지 볼 수 있습니다."),
     "none": ("➖ 처리할 내용 없음", "브리핑으로 끝나는 건입니다."),
-    "unsupported": ("🕓 내용 요약 검토 필요", "논의 내용을 요약할 수 있는 건입니다. 눌러서 선택하세요."),
+    "unsupported": ("🕘 처리 방법 준비 중", "후속 조치가 필요하지만 아직 회신 Skill이 없습니다."),
     "error": ("❌ 처리 실패", "다시 시도할 수 있습니다."),
     "pending": ("· 분류 전", "아직 분류하지 않았습니다."),
 }

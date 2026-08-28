@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import random
+import re
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from email.utils import getaddresses
 from typing import Any, Callable, Sequence
 
+from .archive_result import (
+    ARCHIVE_FORMAT_ERROR_MESSAGE,
+    ArchiveResultFormatError,
+    archive_output_contract,
+    normalize_archive_result,
+)
 from .codex_runner import CodexResult, CodexRunError, codex_version, run_codex
 from .emails import for_codex, normalize_email
 from .gmail_mcp import DEFAULT_QUERY as GMAIL_DEFAULT_QUERY
-from .gmail_mcp import fetch_messages
+from .gmail_mcp import create_draft, fetch_messages
 from .replies import can_reply, extract_draft, reply_route, supported_labels
 from .skill_registry import PROJECT_ROOT
 
@@ -28,6 +39,7 @@ CLASSIFY_TIMEOUT_SECONDS = 120
 REPLY_TIMEOUT_SECONDS = 240
 CLASSIFY_REASONING_EFFORT = "low"
 CLASSIFY_SERVICE_TIER = "priority"
+ARCHIVE_MAX_WORKERS = 3
 
 # 다시 시도해서 결과가 달라질 수 있는 실패만 재시도한다. CLI가 없는데 다시 보내봐야
 # 같은 속도로 N번 더 실패할 뿐이다.
@@ -78,6 +90,47 @@ def fetch_inbox(
         email["index"] = index
         inbox.append(email)
     return inbox, errors
+
+
+RECIPIENT_ERROR = "받는 사람의 이메일 주소를 확인할 수 없어 임시보관함에 저장하지 못했습니다."
+
+
+def _email_addresses(value: str | Sequence[str] | None) -> list[str]:
+    """표시 이름을 버리고 실제 주소만 반환한다. 이름뿐인 값은 받지 않는다."""
+    if value is None:
+        return []
+    values = [value] if isinstance(value, str) else [str(item) for item in value]
+    addresses: list[str] = []
+    for _name, address in getaddresses(values):
+        address = address.strip()
+        if re.fullmatch(r"[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+", address):
+            addresses.append(address)
+    return addresses
+
+
+def purchase_draft_fingerprint(
+    *, to: str, subject: str, body: str, cc: str = "", bcc: str = ""
+) -> str:
+    """현재 화면 편집본의 중복 Draft 생성을 막는 비가역 식별자."""
+    payload = {"to": to, "cc": cc, "bcc": bcc, "subject": subject, "body": body}
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def save_purchase_review_draft(
+    *, to: str, subject: str, body: str, cc: str = "", bcc: str = ""
+) -> dict[str, Any]:
+    """검토 화면의 최신 편집본을 Gmail Draft로 저장한다. 발송·재시도는 하지 않는다."""
+    recipients = _email_addresses(to)
+    if not recipients:
+        raise ValueError(RECIPIENT_ERROR)
+    return create_draft(
+        to=recipients,
+        cc=_email_addresses(cc) or None,
+        bcc=_email_addresses(bcc) or None,
+        subject=subject,
+        body=body,
+    )
 
 
 def classify_email(
@@ -354,3 +407,120 @@ def review_discussion_email(
         skill="discussion-email-review",
         model=model,
     )
+
+
+def archive_discussion_email(
+    email: dict[str, Any], classification: Any, model: str | None = None
+) -> CodexResult:
+    """선택한 이메일 Thread를 승인된 Email Archive Agent로 정리한다."""
+    result = run_codex(
+        prompt=(
+            "input.json의 email에 있는 최신 메시지와 thread의 이전 메시지를 합쳐 전체 이메일 "
+            "스레드를 시간순으로 복원하세요. Email Archive Agent의 회사 규칙과 "
+            "references/output-schema.md를 적용하고 외부 저장은 수행하지 마세요. "
+            + archive_output_contract()
+        ),
+        payload={"email": for_codex(email), "classification": classification},
+        skill="email-archive-agent",
+        model=model,
+    )
+    canonical = normalize_archive_result(result.parsed, email)
+    return CodexResult(text=result.text, parsed=canonical)
+
+
+def archive_discussion_emails(
+    targets: Sequence[tuple[dict[str, Any], Any]],
+    *,
+    model: str | None = None,
+    max_workers: int = ARCHIVE_MAX_WORKERS,
+    on_event: Callable[[dict[str, Any]], None] | None = None,
+) -> list[dict[str, Any]]:
+    """선택한 Thread를 최대 3개씩 독립 분석하고 선택 순서로 반환한다."""
+    if not targets:
+        return []
+    workers = max(1, min(max_workers, ARCHIVE_MAX_WORKERS, len(targets)))
+    total = len(targets)
+    results: list[dict[str, Any] | None] = [None] * total
+
+    def one(email: dict[str, Any], classification: Any, index: int) -> dict[str, Any]:
+        case_id = str(email.get("case_id") or email.get("message_id") or index)
+        run_id = uuid.uuid4().hex
+        if on_event is not None:
+            on_event(
+                {
+                    "state": "running",
+                    "total": total,
+                    "record": {
+                        "case_id": case_id,
+                        "index": index,
+                        "run_id": run_id,
+                        "status": "running",
+                    },
+                }
+            )
+        try:
+            result = archive_discussion_email(email, classification, model)
+        except ArchiveResultFormatError:
+            return {
+                "case_id": case_id,
+                "index": index,
+                "run_id": run_id,
+                "status": "error",
+                "email": email,
+                "error": ARCHIVE_FORMAT_ERROR_MESSAGE,
+            }
+        except Exception as exc:  # noqa: BLE001 - 한 건의 실패가 나머지를 중단하지 않는다
+            return {
+                "case_id": case_id,
+                "index": index,
+                "run_id": run_id,
+                "status": "error",
+                "email": email,
+                "error": f"{type(exc).__name__}: 분석에 실패했습니다.",
+            }
+        if not isinstance(result.parsed, dict):
+            return {
+                "case_id": case_id,
+                "index": index,
+                "run_id": run_id,
+                "status": "error",
+                "email": email,
+                "error": "분석 결과를 구조화하지 못했습니다.",
+            }
+        return {
+            "case_id": case_id,
+            "index": index,
+            "run_id": run_id,
+            "status": "ok",
+            "email": email,
+            "result": result,
+            "error": None,
+        }
+
+    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="archive")
+    try:
+        futures = [
+            executor.submit(one, email, classification, index)
+            for index, (email, classification) in enumerate(targets)
+        ]
+        if on_event is not None:
+            on_event({"state": "submitted", "total": total, "done": 0, "failed": 0})
+        done = failed = 0
+        for future in as_completed(futures):
+            record = future.result()
+            results[record["index"]] = record
+            done += 1
+            failed += record["status"] == "error"
+            if on_event is not None:
+                on_event(
+                    {
+                        "state": record["status"],
+                        "total": total,
+                        "done": done,
+                        "failed": failed,
+                        "record": record,
+                    }
+                )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    return [record for record in results if record is not None]

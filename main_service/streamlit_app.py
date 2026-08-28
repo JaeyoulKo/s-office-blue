@@ -10,6 +10,14 @@ from typing import Any, Callable
 import streamlit as st
 
 from main_service.codex_runner import CodexResult, codex_version
+from main_service.archive_result import is_canonical_archive_result
+from main_service.email_archive_excel import (
+    EmailArchiveExcelStore,
+    EMPTY_VALUE as ARCHIVE_EMPTY_VALUE,
+    archive_save_candidates,
+    formatted_amount,
+    natural_language_items,
+)
 from main_service.emails import (
     LABELS,
     amount_ranks,
@@ -43,18 +51,22 @@ from main_service.service import (
     DEFAULT_MAX_WORKERS,
     GMAIL_DEFAULT_QUERY,
     MAX_PARALLEL,
+    archive_discussion_emails,
     can_reply,
     classify_email,
     classify_emails,
     draft_replies,
     fetch_inbox,
+    purchase_draft_fingerprint,
     review_discussion_email,
     review_purchase_email,
+    save_purchase_review_draft,
     supported_labels,
 )
 from main_service.skill_registry import PROJECT_ROOT
 
 DATA_DIR = PROJECT_ROOT / "data" / "synthetic" / "emails"
+ARCHIVE_LABEL = "논의 내용 요약 필요 이메일"
 
 
 # ------------------------------------------------------------------ 목록 · 분류 · 정렬
@@ -113,6 +125,8 @@ class BatchJob:
     def _line(self, record: dict[str, Any]) -> str:
         sender = self.senders.get(record["case_id"], "")
         ok = record["status"] == "ok"
+        if self.kind == "archive":
+            return "아카이빙 분석을 완료했습니다." if ok else "아카이빙 분석에 실패했습니다."
         if self.kind == "reply":
             return reply_line(sender, ok=ok)
         classification = record.get("classification") or {}
@@ -135,12 +149,18 @@ class BatchJob:
             self.records[record["case_id"]] = record
             self.done = event.get("done", self.done)
             self.failed = event.get("failed", self.failed)
-            self.log.append(self._line(record))
+            if record.get("status") != "running":
+                self.log.append(self._line(record))
 
 
 JOB_VIEW = {
     "classify": ("메일 {total}건을 함께 분류하고 있어요…", "classified", WAIT_MESSAGES),
     "reply": ("회신 메일 {total}건을 쓰고 있어요…", "drafts", REPLY_WAIT_MESSAGES),
+    "archive": (
+        "선택한 {total}건의 논의 이메일을 정리하고 있습니다",
+        "archive_results",
+        WAIT_MESSAGES,
+    ),
 }
 
 
@@ -172,6 +192,15 @@ def render_running_batch() -> None:
         # 코드블록으로 찍으면 문장이 로그처럼 보인다. 사람이 읽는 문장이라 그냥 글로 둔다.
         for line in job.log[-6:]:
             st.markdown(line)
+        if job.kind == "archive":
+            status_names = {
+                "running": "분석 중",
+                "ok": "완료",
+                "error": "실패",
+            }
+            for case_id, title in job.senders.items():
+                status = (job.records.get(case_id) or {}).get("status")
+                st.write(f"{title} · {status_names.get(status, '대기 중')}")
 
 
 def build_items(inbox: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -210,7 +239,8 @@ def apply_filters(items: list[dict[str, Any]], settings: dict[str, Any]) -> list
 
 
 def render_list_tab(inbox: list[dict[str, Any]], settings: dict[str, Any], ready: bool) -> None:
-    if st.session_state.get("job") is not None:
+    current_job: BatchJob | None = st.session_state.get("job")
+    if current_job is not None and current_job.kind != "archive":
         render_running_batch()
         return
 
@@ -238,12 +268,12 @@ def render_list_tab(inbox: list[dict[str, Any]], settings: dict[str, Any], ready
         st.error(st.session_state.get("last_error") or "분류 실행 중 오류가 발생했습니다.")
 
     items = build_items(inbox)
+    ranked = rank_briefings(items, mode=settings["sort"])
     summary = summarize(inbox, items)
 
     # 요약이 먼저 나오고 목록이 그 아래다.
     render_headline(summary)
     render_counts(summary)
-    ranked = rank_briefings(items, mode=settings["sort"])
     failures = [item for item in items if item["status"] == "error"]
     visible = apply_filters(ranked, settings)
 
@@ -251,12 +281,14 @@ def render_list_tab(inbox: list[dict[str, Any]], settings: dict[str, Any], ready
     if not visible:
         st.info("조건에 맞는 메일이 없습니다.")
     else:
-        render_stage_sections(visible, settings)
+        render_stage_sections(visible, settings, ready)
 
     render_failures(failures)
 
 
-def render_stage_sections(items: list[dict[str, Any]], settings: dict[str, Any]) -> None:
+def render_stage_sections(
+    items: list[dict[str, Any]], settings: dict[str, Any], ready: bool
+) -> None:
     """처리 단계별로 묶어서 보여준다.
 
     "무엇을 더 해야 하는가"가 화면의 첫 질문이라 `회신 검토 필요`가 맨 위에 오고, 회신 생성
@@ -276,7 +308,10 @@ def render_stage_sections(items: list[dict[str, Any]], settings: dict[str, Any])
             if not bucket:
                 continue
             title, hint = stage_caption(stage)
-            st.subheader(f"{title} {len(bucket)}건")
+            if stage == "unsupported":
+                render_archive_stage_header(bucket, settings, title, ready)
+            else:
+                st.subheader(f"{title} {len(bucket)}건")
 
             if stage == "todo":
                 picked = [item for item in bucket if item["case_id"] in selected]
@@ -296,6 +331,11 @@ def render_stage_sections(items: list[dict[str, Any]], settings: dict[str, Any])
                 st.caption(hint)
 
             render_fold_list(bucket, settings)
+            if stage == "unsupported":
+                if st.session_state.get("job") is not None:
+                    render_running_batch()
+                else:
+                    render_archive_batch_results()
             st.write("")
 
 
@@ -314,6 +354,14 @@ def render_fold_list(items: list[dict[str, Any]], settings: dict[str, Any]) -> N
         case_id = item["case_id"]
         is_open = case_id in opened
         is_picked = case_id in selected
+        archive_selected: set[str] = st.session_state.setdefault(
+            "archive_selected_cases", set()
+        )
+        archive_selectable = (
+            item.get("stage") == "unsupported" and item.get("label") == ARCHIVE_LABEL
+        )
+        archive_id = _archive_selection_id(item)
+        is_archive_picked = archive_id in archive_selected
         # 아직 회신을 만들지 않은, 만들 수 있는 건만 고를 수 있다. 이미 처리했거나
         # 처리할 내용이 없는 건을 선택해봐야 할 일이 없다.
         selectable = item["stage"] == "todo"
@@ -346,6 +394,21 @@ def render_fold_list(items: list[dict[str, Any]], settings: dict[str, Any]) -> N
                 if clicked:
                     selected.symmetric_difference_update({case_id})
                     st.rerun()
+            elif archive_selectable:
+                if bar.button(
+                    item_header(item),
+                    key=f"archive-pick::{inbox_key}::{case_id}",
+                    type="primary" if is_archive_picked else "secondary",
+                    icon=(
+                        ":material/check_circle:"
+                        if is_archive_picked
+                        else ":material/circle:"
+                    ),
+                    width="stretch",
+                    help="클릭하면 논의 아카이빙 대상으로 선택/해제됩니다",
+                ):
+                    archive_selected.symmetric_difference_update({archive_id})
+                    st.rerun()
             else:
                 # 선택할 수 없는 줄도 눌리긴 해야 한다. 여기서는 펼치기로 동작한다.
                 if bar.button(
@@ -365,7 +428,11 @@ def render_fold_list(items: list[dict[str, Any]], settings: dict[str, Any]) -> N
                 if record is not None:
                     # 어떻게 처리했는지가 이 메일에서 가장 궁금한 부분이라 위에 둔다.
                     st.markdown(f"**처리 결과** · {record.get('skill', '')}")
-                    render_draft(record)
+                    render_draft(
+                        record,
+                        save_draft=save_purchase_review_draft,
+                        draft_fingerprint=purchase_draft_fingerprint,
+                    )
                 # 원본 메일은 그 안에서 한 번 더 접어 둔다. 기본은 접힌 상태다.
                 with st.expander("📧 원본 메일 보기", expanded=False):
                     render_original_email(item)
@@ -411,7 +478,11 @@ def render_pick_tab(inbox: list[dict[str, Any]], settings: dict[str, Any]) -> No
             continue
         with st.expander(f"{item_header(item)}", expanded=False):
             st.caption(f"{record.get('skill', '')} · {record.get('action', '')}")
-            render_draft(record)
+            render_draft(
+                record,
+                save_draft=save_purchase_review_draft,
+                draft_fingerprint=purchase_draft_fingerprint,
+            )
 
 
 def start_reply_batch(items: list[dict[str, Any]], settings: dict[str, Any]) -> None:
@@ -458,6 +529,174 @@ def show_result(result: CodexResult | None) -> None:
         st.json(result.parsed)
     else:
         st.code(result.text, language="text")
+
+
+def archive_button_label(selected_count: int) -> str:
+    if selected_count <= 0:
+        return "🗂️ 아카이빙할 메일 선택"
+    return f"🗂️ 선택 {selected_count}건 아카이빙"
+
+
+def _archive_selection_id(item: dict[str, Any]) -> str:
+    email = item.get("email") or {}
+    return str(email.get("thread_id") or item.get("case_id") or "")
+
+
+def render_archive_stage_header(
+    items: list[dict[str, Any]],
+    settings: dict[str, Any],
+    title: str,
+    ready: bool,
+) -> None:
+    selected: set[str] = st.session_state.setdefault("archive_selected_cases", set())
+    archive_items = [item for item in items if item.get("label") == ARCHIVE_LABEL]
+    valid_ids = {_archive_selection_id(item) for item in archive_items}
+    selected.intersection_update(valid_ids)
+    count = len(selected)
+    title_column, run_column = st.columns([2, 1], vertical_alignment="center")
+    title_column.subheader(f"{title} {len(items)}건")
+    running = st.session_state.get("job") is not None
+    selected_items = [
+        item for item in archive_items if _archive_selection_id(item) in selected
+    ]
+    if run_column.button(
+        archive_button_label(count),
+        key="archive-selected-run",
+        type="primary",
+        disabled=not ready or not selected_items or running,
+        width="stretch",
+    ):
+        st.session_state.archive_run_order = [item["case_id"] for item in selected_items]
+        st.session_state.archive_results = {}
+        st.session_state.job = BatchJob(
+            kind="archive",
+            total=len(selected_items),
+            senders={
+                item["case_id"]: str(item["email"].get("subject") or "제목 없음")
+                for item in selected_items
+            },
+            runner=lambda on_event: archive_discussion_emails(
+                [
+                    (item["email"], item.get("classification") or {})
+                    for item in selected_items
+                ],
+                model=settings["model"],
+                max_workers=3,
+                on_event=on_event,
+            ),
+        )
+        st.rerun()
+
+
+
+def render_archive_batch_results() -> None:
+    records: dict[str, dict[str, Any]] = st.session_state.get("archive_results", {})
+    order: list[str] = st.session_state.get("archive_run_order", [])
+    if not order:
+        return
+    st.subheader("논의 이메일 아카이빙 결과")
+    successful, failed = archive_save_candidates(records, order)
+    for case_id in order:
+        record = records.get(case_id)
+        if record is None:
+            continue
+        if record.get("status") != "ok":
+            email = record.get("email") or {}
+            title = str(email.get("subject") or "제목 없음")
+            latest_date = str(email.get("received_at") or "")[:10]
+            with st.expander(
+                f"{title} · {latest_date or ARCHIVE_EMPTY_VALUE}", expanded=False
+            ):
+                st.error(record.get("error") or "분석에 실패했습니다.")
+            continue
+        email = record["email"]
+        codex_result = record["result"]
+        parsed = codex_result.parsed if isinstance(codex_result.parsed, dict) else {}
+        if not is_canonical_archive_result(parsed):
+            title = str(email.get("subject") or "제목 없음")
+            latest_date = str(email.get("received_at") or "")[:10]
+            with st.expander(
+                f"{title} · {latest_date or ARCHIVE_EMPTY_VALUE}", expanded=False
+            ):
+                st.error("아카이빙 결과 형식을 해석하지 못했습니다. 다시 분석해 주세요.")
+            continue
+        title = str(email.get("subject") or "제목 없음")
+        latest_date = str(email.get("received_at") or parsed.get("날짜") or "")[:10]
+        with st.expander(f"{title} · {latest_date or ARCHIVE_EMPTY_VALUE}", expanded=True):
+            _render_archive_result(parsed)
+    _render_archive_excel_controls(successful, failed)
+
+
+def _render_archive_value(label: str, value: Any) -> None:
+    st.write(f"**{label}**")
+    items = natural_language_items(value)
+    if not items:
+        st.write(ARCHIVE_EMPTY_VALUE)
+        return
+    for item in items:
+        # st.write는 이메일/LLM의 HTML을 실행하지 않고 일반 텍스트로 표시한다.
+        st.write(f"• {item}")
+
+
+def _render_archive_result(result: dict[str, Any]) -> None:
+    fields = [
+        ("발신자", result.get("발신자")),
+        ("최신 날짜", result.get("날짜") or result.get("최신 날짜")),
+        ("Topic", result.get("Topic")),
+        ("최종 금액", formatted_amount(result.get("금액"), result.get("통화"))),
+        ("Business Impact", result.get("Business Impact")),
+        ("Thread 진행 중 변경된 내용", result.get("Thread 진행 중 변경된 내용")),
+        ("결정된 내용", result.get("결정된 내용")),
+        ("Open Item", result.get("Open Item")),
+    ]
+    for label, value in fields:
+        _render_archive_value(label, value)
+
+
+def _render_archive_excel_controls(
+    successful: list[tuple[dict[str, Any], dict[str, Any]]], failed_count: int
+) -> None:
+    store = EmailArchiveExcelStore()
+    try:
+        workbook_bytes = store.read_bytes()
+    except Exception as exc:  # noqa: BLE001
+        workbook_bytes = None
+        st.error(f"Master Excel을 읽을 수 없습니다: {exc}")
+
+    save_column, download_column = st.columns(2)
+    if save_column.button(
+        "💾 Save", key="archive-batch-save", disabled=not successful, width="stretch"
+    ):
+        try:
+            saved = store.append_many(successful)
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Master Excel 저장에 실패했습니다: {exc}")
+        else:
+            if saved.added_count == 0:
+                st.info("새로 저장할 아카이빙 결과가 없습니다.")
+            else:
+                st.success("Master Excel 저장을 완료했습니다.")
+            st.write(f"새로 저장된 결과: {saved.added_count}건")
+            st.write(f"이미 저장되어 제외된 결과: {saved.duplicate_count}건")
+            st.write(f"분석 실패로 제외된 결과: {failed_count}건")
+            st.write(f"Master Excel 전체 누적 결과: {saved.row_count}건")
+            workbook_bytes = store.read_bytes()
+
+    download_column.download_button(
+        "📥 Download",
+        data=workbook_bytes or b"",
+        file_name="email_archive_results.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        disabled=workbook_bytes is None,
+        key="archive-batch-download",
+        width="stretch",
+    )
+    if workbook_bytes is None:
+        st.info("먼저 아카이빙 결과를 저장해 주세요")
+    st.caption(
+        "Save: 분석이 완료된 미저장 아카이빙 결과를 Master Excel에 추가 · "
+        "Download: 지금까지 누적된 Master Excel 전체를 다운로드"
+    )
 
 
 def render_single_tab(source: Path, model: str | None) -> None:
@@ -586,6 +825,9 @@ def main() -> None:
                         st.session_state.gmail_key = f"gmail:{gmail_query}"
                         st.session_state.classified = {}
                         st.session_state.selected_cases = set()
+                        st.session_state.archive_selected_cases = set()
+                        st.session_state.archive_results = {}
+                        st.session_state.archive_run_order = []
                         st.session_state.expanded_cases = set()
                         st.rerun()
         sort_mode = st.segmented_control(
@@ -635,6 +877,9 @@ def main() -> None:
         st.session_state.inbox_key = inbox_key
         st.session_state.classified = {}
         st.session_state.selected_cases = set()
+        st.session_state.archive_selected_cases = set()
+        st.session_state.archive_results = {}
+        st.session_state.archive_run_order = []
         st.session_state.expanded_cases = set()
 
     settings = {

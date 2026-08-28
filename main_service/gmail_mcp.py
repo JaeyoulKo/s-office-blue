@@ -11,7 +11,8 @@
 서버는 `~/.codex/config.toml`의 `mcp_servers.gmail`에 등록된 stdio 프로세스이고 줄 단위
 JSON-RPC 2.0을 쓴다. 인증은 서버가 자기 토큰 파일로 처리하므로 여기서 비밀값을 다루지 않는다.
 
-읽기 도구만 부른다. 이 모듈에는 발송·라벨 변경·삭제 경로가 없다.
+조회 경로는 읽기 도구만 부른다. 쓰기는 검토된 회신을 임시보관함에 저장하는
+`create_draft` 한 가지 경로만 별도로 허용하며, 발송·라벨 변경·삭제 경로는 없다.
 """
 
 from __future__ import annotations
@@ -187,6 +188,23 @@ class GmailClient:
         except json.JSONDecodeError as exc:
             raise GmailError(f"{tool} 응답을 읽을 수 없습니다: {text[:200]}") from exc
 
+    def create_draft(self, arguments: dict[str, Any]) -> Any:
+        """검토된 메일을 Draft로만 저장한다."""
+        result = self._request(
+            "tools/call", {"name": "create_draft", "arguments": arguments}
+        )
+        structured = (result or {}).get("structuredContent")
+        if isinstance(structured, dict):
+            return structured
+        content = (result or {}).get("content") or []
+        text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+        if (result or {}).get("isError"):
+            raise GmailError(text or "create_draft 호출이 실패했습니다.")
+        try:
+            return json.loads(text) if text else {}
+        except json.JSONDecodeError as exc:
+            raise GmailError("create_draft 응답을 읽을 수 없습니다.") from exc
+
     def close(self) -> None:
         process = getattr(self, "process", None)
         if process is None:
@@ -293,3 +311,23 @@ def fetch_messages(
 
     messages.sort(key=lambda m: m.get("received_at") or "", reverse=True)
     return messages, errors
+
+
+def create_draft(
+    *,
+    to: list[str],
+    subject: str,
+    body: str,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
+    timeout_seconds: int = 60,
+) -> dict[str, Any]:
+    """Gmail Draft를 한 번 생성한다. 발송은 수행하지 않는다."""
+    arguments: dict[str, Any] = {"to": to, "subject": subject, "body": body}
+    if cc:
+        arguments["cc"] = cc
+    if bcc:
+        arguments["bcc"] = bcc
+    with GmailClient(timeout_seconds=timeout_seconds) as client:
+        result = client.create_draft(arguments)
+    return result if isinstance(result, dict) else {}

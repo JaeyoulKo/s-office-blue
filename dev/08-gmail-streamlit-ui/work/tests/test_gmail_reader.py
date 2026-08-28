@@ -1,18 +1,41 @@
 from __future__ import annotations
 
-import json
-import subprocess
 import unittest
 from unittest.mock import patch
 
-from main_service.gmail_reader import fetch_messages
-from main_service.service import load_gmail_inbox
+from main_service.gmail_mcp import fetch_messages
+from main_service.service import fetch_inbox
+
+
+class FakeClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def call(self, tool: str, arguments: dict):
+        self.calls.append((tool, arguments))
+        if tool == "search_threads":
+            return {"threads": [{"id": "synthetic-thread"}]}
+        return {
+            "messages": [{
+                "id": "synthetic-message", "threadId": "synthetic-thread",
+                "sender": "sender@example.invalid",
+                "toRecipients": ["receiver@example.invalid"],
+                "subject": "Synthetic subject", "plaintextBody": "Synthetic body",
+                "date": "Thu, 13 Aug 2026 09:00:00 +0900",
+            }],
+        }
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return None
 
 
 class GmailReaderTests(unittest.TestCase):
     def test_service_delegates_inbox_loading_to_reader(self) -> None:
-        with patch("main_service.service.fetch_messages", return_value=[]) as mocked:
-            self.assertEqual(load_gmail_inbox("in:inbox", max_results=3), [])
+        with patch("main_service.service.fetch_messages", return_value=([], [])) as mocked:
+            self.assertEqual(fetch_inbox("in:inbox", max_results=3), ([], []))
         mocked.assert_called_once_with("in:inbox", max_results=3)
 
     def test_rejects_empty_query(self) -> None:
@@ -23,42 +46,14 @@ class GmailReaderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             fetch_messages("in:inbox", max_results=51)
 
-    def test_uses_read_only_codex_exec_and_returns_messages(self) -> None:
-        message = {
-            "message_id": "synthetic-message",
-            "thread_id": "synthetic-thread",
-            "sender": "sender@example.invalid",
-            "recipients": ["receiver@example.invalid"],
-            "subject": "Synthetic subject",
-            "body": "Synthetic body",
-            "received_at": "2026-08-13T00:00:00Z",
-            "attachments": [],
-        }
-
-        def complete(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
-            return subprocess.CompletedProcess(command, 0, "", "")
-
-        with (
-            patch("main_service.gmail_reader.tempfile.TemporaryDirectory") as temporary,
-            patch("main_service.gmail_reader.subprocess.run", side_effect=complete) as mocked,
-            patch(
-                "main_service.gmail_reader.Path.read_text",
-                return_value=json.dumps({"messages": [message]}),
-            ),
-        ):
-            temporary.return_value.__enter__.return_value = "."
+    def test_uses_read_only_mcp_tools_and_returns_messages(self) -> None:
+        client = FakeClient()
+        with patch("main_service.gmail_mcp.GmailClient", return_value=client):
             result = fetch_messages("in:inbox is:unread", max_results=5)
 
-        command = mocked.call_args.args[0]
-        self.assertEqual(result, [message])
-        self.assertIn("exec", command)
-        self.assertEqual(command[command.index("--model") + 1], "gpt-5.4")
-        self.assertIn('model_reasoning_effort="low"', command)
-        self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
-        self.assertIn("--ephemeral", command)
-        self.assertIn("--output-schema", command)
-        self.assertIn("mcp__codex_apps__gmail_*", command[-1])
-        self.assertIn("Do not draft, send", command[-1])
+        self.assertEqual(len(result[0]), 1)
+        self.assertEqual(result[1], [])
+        self.assertEqual([name for name, _ in client.calls], ["search_threads", "get_thread"])
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import queue
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from main_service.gmail_mcp import (
     DEFAULT_QUERY,
@@ -12,6 +12,7 @@ from main_service.gmail_mcp import (
     GmailError,
     _server_environment,
     _to_snapshot,
+    create_draft,
     fetch_messages,
 )
 from main_service.skill_registry import PROJECT_ROOT
@@ -182,7 +183,6 @@ class ServerEncodingTests(unittest.TestCase):
         env = _server_environment({"env": {"PYTHONIOENCODING": "utf-8:strict"}})
         self.assertEqual(env["PYTHONIOENCODING"], "utf-8:strict")
 
-
 class ReadOnlyTests(unittest.TestCase):
     """이 모듈에는 발송·삭제 경로가 없어야 한다."""
 
@@ -196,6 +196,35 @@ class ReadOnlyTests(unittest.TestCase):
         self.assertNotIn("create_draft", READ_ONLY_TOOLS)
         self.assertIn("search_threads", READ_ONLY_TOOLS)
         self.assertIn("get_thread", READ_ONLY_TOOLS)
+
+
+class CreateDraftTests(unittest.TestCase):
+    def test_calls_only_create_draft_and_omits_empty_optional_recipients(self):
+        client = FakeClient([], {})
+        client.create_draft = Mock(return_value={"draftId": "d", "messageId": "m"})
+        with run_with(client):
+            result = create_draft(to=["to@example.com"], subject="제목", body="본문")
+        client.create_draft.assert_called_once_with(
+            {"to": ["to@example.com"], "subject": "제목", "body": "본문"}
+        )
+        self.assertEqual(result["draftId"], "d")
+
+    def test_client_draft_method_uses_create_draft_not_send_message(self):
+        client = GmailClient.__new__(GmailClient)
+        with patch.object(
+            client,
+            "_request",
+            return_value={"structuredContent": {"draftId": "d", "messageId": "m"}},
+        ) as request:
+            result = client.create_draft({"to": ["to@example.com"], "subject": "s", "body": "b"})
+        request.assert_called_once_with(
+            "tools/call",
+            {
+                "name": "create_draft",
+                "arguments": {"to": ["to@example.com"], "subject": "s", "body": "b"},
+            },
+        )
+        self.assertEqual(result["draftId"], "d")
 
 
 if __name__ == "__main__":

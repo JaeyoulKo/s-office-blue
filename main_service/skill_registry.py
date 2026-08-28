@@ -8,6 +8,7 @@ SKILLS = {
     "email-classifier": SKILLS_ROOT / "email-classifier",
     "purchase-email-review": SKILLS_ROOT / "purchase-email-review",
     "discussion-email-review": SKILLS_ROOT / "discussion-email-review",
+    "email-archive-agent": SKILLS_ROOT / "email-archive-agent",
 }
 
 

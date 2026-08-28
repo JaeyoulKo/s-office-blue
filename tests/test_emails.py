@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import random
 import re
 import unittest
@@ -168,8 +169,21 @@ class InboxTests(unittest.TestCase):
     def test_accepts_object_and_array(self):
         single = load_inbox(PROJECT_ROOT / "data/synthetic/emails/purchase-request.json")
         self.assertEqual(len(single), 1)
+        records = json.loads(SAMPLE.read_text(encoding="utf-8"))
         inbox = load_inbox(SAMPLE)
+        expected_pr_numbers = {
+            "PR30922", "PR60274", "PR90612", "PR31829", "PR61720",
+            "PR91582", "PR33011", "PR63340", "PR94122", "PR35455",
+        }
+        self.assertEqual(len(records), 10)
+        self.assertEqual({record["pr_number"] for record in records}, expected_pr_numbers)
+        self.assertEqual(len({record["id"] for record in records}), 10)
+        self.assertTrue(all(record.get("sender") for record in records))
+        self.assertTrue(all(record.get("recipients") for record in records))
+        self.assertTrue(all(record.get("requester_email") for record in records))
         self.assertEqual(len(inbox), 10)
+        self.assertEqual({email["case_id"] for email in inbox}, expected_pr_numbers)
+        self.assertEqual(len({email["thread_id"] for email in inbox}), 10)
         self.assertEqual(
             [email["case_id"] for email in inbox],
             ["PR30922", "PR60274", "PR90612", "PR31829", "PR61720",
