@@ -60,7 +60,7 @@ STAGE_PENDING = "pending"          # 아직 분류하지 않음
 STAGE_TODO = "todo"                # 회신을 만들어야 함
 STAGE_UNSUPPORTED = "unsupported"  # 후속 처리가 필요하지만 아직 Skill이 없음
 STAGE_NONE = "none"                # 처리할 내용이 없음 (공지·일반 업무 메일)
-STAGE_DONE = "done"                # 처리 완료
+STAGE_DONE = "done"                # 회신 검토 완료
 STAGE_ERROR = "error"              # 처리하다 실패
 
 # decision-rules.md "분류 후 처리": 일반 이메일은 브리핑에서 끝난다.
