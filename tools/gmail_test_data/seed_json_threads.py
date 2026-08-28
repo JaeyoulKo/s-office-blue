@@ -15,11 +15,12 @@ import json
 import os
 import re
 import sys
+import traceback
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.policy import SMTP
-from email.utils import format_datetime, parseaddr, parsedate_to_datetime
+from email.utils import format_datetime, formataddr, parseaddr, parsedate_to_datetime
 from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Sequence
@@ -36,7 +37,15 @@ SCOPES = (READONLY_SCOPE, INSERT_SCOPE)
 DEFAULT_TOKEN_PATH = Path("~/.codex/mcp/gmail-local/private/seed-token.json").expanduser()
 DEFAULT_CREDENTIALS_PATH = Path("~/.codex/mcp/gmail-local/private/credentials.json").expanduser()
 MAX_WORKERS = 3
+DEFAULT_MAX_WORKERS = 1
 _MESSAGE_ID_SAFE = re.compile(r"[^A-Za-z0-9.!#$%&'*+/=?^_`{|}~@-]+")
+_SENSITIVE_ERROR = re.compile(
+    r"(?:https?://\S+|Bearer\s+\S+|[\w.+-]+@[\w.-]+|<[^>]+>|(?:token|credential)s?\s*[=:]\s*\S+)",
+    re.IGNORECASE,
+)
+SEOUL_TIMEZONE = timezone(timedelta(hours=9))
+SELF_RECIPIENT_PLACEHOLDER = "jaemu.kim@example.invalid"
+DRY_RUN_SELF_RECIPIENT = "authenticated-user@example.invalid"
 
 
 class ValidationError(ValueError):
@@ -86,10 +95,29 @@ class RunCounts:
     inserted: int = 0
     skipped: int = 0
     failed: int = 0
+    diagnostics: list["FailureDiagnostic"] = field(default_factory=list)
 
     def add(self, other: "RunCounts") -> None:
         for name in ("valid", "already_exists", "inserted", "skipped", "failed"):
             setattr(self, name, getattr(self, name) + getattr(other, name))
+        self.diagnostics.extend(other.diagnostics)
+
+
+@dataclass(frozen=True)
+class FailureDiagnostic:
+    exception_class: str
+    message: str
+    stack: tuple[tuple[str, str, int], ...]
+
+
+def safe_failure_diagnostic(exc: BaseException) -> FailureDiagnostic:
+    """Keep actionable local traceback details without fixture or credential values."""
+    message = _SENSITIVE_ERROR.sub("[redacted]", str(exc))[:240]
+    stack = tuple(
+        (Path(frame.filename).name, frame.name, frame.lineno)
+        for frame in traceback.extract_tb(exc.__traceback__)
+    )
+    return FailureDiagnostic(type(exc).__name__, message, stack)
 
 
 def _stable_hex(*parts: object, length: int = 24) -> str:
@@ -119,11 +147,46 @@ def _parse_date(value: object, *, identity: str, ordinal: int) -> datetime:
             except ValueError as exc:
                 raise ValidationError("invalid date field") from exc
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
+            parsed = parsed.replace(tzinfo=SEOUL_TIMEZONE)
         return parsed
     # Fixtures without dates still need a stable RFC 2822 Date header.
     seconds = int(_stable_hex(identity, length=8), 16) % (20 * 365 * 24 * 3600)
     return datetime(2000, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=seconds + ordinal)
+
+
+def parse_date_override(value: str | None) -> date | None:
+    if value is None:
+        return None
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValidationError("--date-override must use YYYY-MM-DD")
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValidationError("--date-override is not a valid calendar date") from exc
+
+
+def override_message_date(original: datetime, override: date | None) -> datetime:
+    if override is None:
+        return original
+    return original.replace(
+        year=override.year, month=override.month, day=override.day, tzinfo=SEOUL_TIMEZONE,
+    )
+
+
+def mime_recipients(recipients: Sequence[str], self_recipient: str | None) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in recipients:
+        display, address = parseaddr(value)
+        if self_recipient and address.casefold() == SELF_RECIPIENT_PLACEHOLDER:
+            address = self_recipient
+            value = formataddr((display or "김재무", address))
+        identity = address.casefold() if address else value.casefold()
+        if identity in seen:
+            continue
+        seen.add(identity)
+        result.append(value)
+    return result
 
 
 def _addresses(value: object) -> list[str]:
@@ -147,7 +210,11 @@ def _message_from_record(record: dict[str, Any], source_id: str, thread_key: str
     recipients = _addresses(record.get("recipients") or record.get("to"))
     subject = str(record.get("subject") or record.get("email_subject") or "").strip()
     body = str(record.get("body") or record.get("email_body") or "")
-    date_value = record.get("received_at") or record.get("date")
+    # Preserve explicit mail headers first, then the native fixture field, then legacy aliases.
+    date_value = (
+        record.get("Date") or record.get("date") or record.get("received_at")
+        or record.get("sent_at") or record.get("email_date")
+    )
     missing = tuple(
         name for name, present in (
             ("From", bool(sender)), ("To", bool(recipients)), ("Subject", bool(subject)),
@@ -195,7 +262,9 @@ def _load_source(path: Path) -> list[SeedThread]:
     grouped: dict[str, list[dict[str, Any]]] = {}
     for index, (raw_record, email) in enumerate(flat_records):
         key = str(email.get("thread_id") or email.get("case_id") or f"record-{index + 1}")
-        grouped.setdefault(key, []).append(email)
+        # Main UI normalization intentionally exposes `received_at`, but native fixtures also use
+        # `date`/`Date`. Keep those raw fields for seeding while retaining normalized mail content.
+        grouped.setdefault(key, []).append({**raw_record, **email})
     for key, items in grouped.items():
         messages = [_message_from_record(item, source_id, key, i) for i, item in enumerate(items)]
         threads.append(SeedThread({source_id}, key, sorted(messages, key=lambda m: (m.date, m.ordinal))))
@@ -266,12 +335,13 @@ def inventory(selected_sources: Sequence[str] | None = None) -> tuple[Inventory,
     return report, result
 
 
-def build_mime(message: SeedMessage, *, parent_ids: Sequence[str]) -> bytes:
+def build_mime(message: SeedMessage, *, parent_ids: Sequence[str],
+               date_override: date | None = None, self_recipient: str | None = None) -> bytes:
     mail = EmailMessage(policy=SMTP)
     mail["From"] = message.sender
-    mail["To"] = ", ".join(message.recipients)
+    mail["To"] = ", ".join(mime_recipients(message.recipients, self_recipient))
     mail["Subject"] = message.subject
-    mail["Date"] = format_datetime(message.date)
+    mail["Date"] = format_datetime(override_message_date(message.date, date_override))
     mail["Message-ID"] = message.message_id
     if parent_ids:
         mail["In-Reply-To"] = parent_ids[-1]
@@ -291,10 +361,17 @@ class GmailGateway:
         messages = result.get("messages") or []
         return str(messages[0].get("threadId") or "") if messages else None
 
-    def insert(self, raw: bytes, thread_id: str | None = None) -> str:
+    def authenticated_email(self) -> str:
+        result = self.service.users().getProfile(userId="me").execute(num_retries=0)
+        _, address = parseaddr(str(result.get("emailAddress") or ""))
+        if not address or "@" not in address:
+            raise ValidationError("authenticated Gmail address is unavailable")
+        return address
+
+    def insert(self, raw: bytes, thread_id: str | None = None, *, unread: bool = False) -> str:
         body: dict[str, Any] = {
             "raw": base64.urlsafe_b64encode(raw).decode("ascii"),
-            "labelIds": ["INBOX"],
+            "labelIds": ["INBOX", "UNREAD"] if unread else ["INBOX"],
         }
         if thread_id:
             body["threadId"] = thread_id
@@ -304,13 +381,18 @@ class GmailGateway:
         return str(result.get("threadId") or "")
 
 
-def _seed_thread(thread: SeedThread, gateway: GmailGateway | None, execute: bool) -> RunCounts:
+def _seed_thread(thread: SeedThread, gateway: GmailGateway | None, execute: bool,
+                 unread: bool = False, date_override: date | None = None,
+                 self_recipient: str | None = None) -> RunCounts:
     counts = RunCounts()
     parent_ids: list[str] = []
     provider_thread_id: str | None = None
     for message in thread.messages:
         try:
-            raw = build_mime(message, parent_ids=parent_ids)
+            raw = build_mime(
+                message, parent_ids=parent_ids, date_override=date_override,
+                self_recipient=self_recipient,
+            )
             counts.valid += 1
             if not execute:
                 counts.skipped += 1
@@ -318,8 +400,9 @@ def _seed_thread(thread: SeedThread, gateway: GmailGateway | None, execute: bool
                 assert gateway is not None
                 try:
                     existing_thread_id = gateway.existing_thread_id(message.message_id)
-                except Exception:  # duplicate-check failure must never lead to insert
+                except Exception as exc:  # duplicate-check failure must never lead to insert
                     counts.failed += 1
+                    counts.diagnostics.append(safe_failure_diagnostic(exc))
                     parent_ids.append(message.message_id)
                     continue
                 if existing_thread_id is not None:
@@ -327,22 +410,27 @@ def _seed_thread(thread: SeedThread, gateway: GmailGateway | None, execute: bool
                     counts.already_exists += 1
                     counts.skipped += 1
                 else:
-                    provider_thread_id = gateway.insert(raw, provider_thread_id) or provider_thread_id
+                    provider_thread_id = gateway.insert(
+                        raw, provider_thread_id, unread=unread,
+                    ) or provider_thread_id
                     counts.inserted += 1
             parent_ids.append(message.message_id)
-        except Exception:
+        except Exception as exc:
             counts.failed += 1
+            counts.diagnostics.append(safe_failure_diagnostic(exc))
     return counts
 
 
 def run_threads(threads: Sequence[SeedThread], gateway: GmailGateway | None, *, execute: bool,
-                max_workers: int) -> RunCounts:
+                max_workers: int, unread: bool = False,
+                date_override: date | None = None,
+                self_recipient: str | None = None) -> RunCounts:
     if not 1 <= max_workers <= MAX_WORKERS:
         raise ValidationError("--max-workers must be between 1 and 3")
     total = RunCounts()
     lock = Lock()
     def work(thread: SeedThread) -> None:
-        result = _seed_thread(thread, gateway, execute)
+        result = _seed_thread(thread, gateway, execute, unread, date_override, self_recipient)
         with lock:
             total.add(result)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -350,9 +438,10 @@ def run_threads(threads: Sequence[SeedThread], gateway: GmailGateway | None, *, 
         for future in concurrent.futures.as_completed(futures):
             try:
                 future.result()
-            except Exception:
+            except Exception as exc:
                 with lock:
                     total.failed += 1
+                    total.diagnostics.append(safe_failure_diagnostic(exc))
     return total
 
 
@@ -387,7 +476,13 @@ def _parser() -> argparse.ArgumentParser:
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--source", action="append", help="source path relative to synthetic email dir")
     selection.add_argument("--all", action="store_true", help="process all sources after deduplication")
-    parser.add_argument("--max-workers", type=int, default=3)
+    parser.add_argument("--unread", action="store_true", help="also apply the UNREAD label")
+    parser.add_argument(
+        "--recipient-self", action="store_true",
+        help="replace the fixture self-recipient with the authenticated Gmail account",
+    )
+    parser.add_argument("--date-override", help="replace the Date calendar day (YYYY-MM-DD)")
+    parser.add_argument("--max-workers", type=int, default=DEFAULT_MAX_WORKERS)
     parser.add_argument("--token-path", type=Path, default=DEFAULT_TOKEN_PATH)
     return parser
 
@@ -395,13 +490,20 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None, *, gateway_factory: Callable[[Path], GmailGateway] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        date_override = parse_date_override(args.date_override)
         report, threads = inventory(args.source)
         if report.malformed_sources or report.validation_errors:
             raise ValidationError("fixture validation failed")
         gateway = None
+        self_recipient = DRY_RUN_SELF_RECIPIENT if args.recipient_self else None
         if args.execute:
             gateway = (gateway_factory or authorize)(args.token_path.expanduser())
-        counts = run_threads(threads, gateway, execute=args.execute, max_workers=args.max_workers)
+            if args.recipient_self:
+                self_recipient = gateway.authenticated_email()
+        counts = run_threads(
+            threads, gateway, execute=args.execute, max_workers=args.max_workers, unread=args.unread,
+            date_override=date_override, self_recipient=self_recipient,
+        )
     except ValidationError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -416,6 +518,14 @@ def main(argv: Sequence[str] | None = None, *, gateway_factory: Callable[[Path],
     print(f"inserted={counts.inserted}")
     print(f"skipped={counts.skipped}")
     print(f"failed={counts.failed}")
+    if counts.diagnostics:
+        diagnostic = counts.diagnostics[0]
+        location = diagnostic.stack[-1] if diagnostic.stack else ("unknown", "unknown", 0)
+        print(
+            f"failure={diagnostic.exception_class} at {location[0]}:{location[1]}:{location[2]} "
+            f"message={diagnostic.message}",
+            file=sys.stderr,
+        )
     return 1 if counts.failed else 0
 
 

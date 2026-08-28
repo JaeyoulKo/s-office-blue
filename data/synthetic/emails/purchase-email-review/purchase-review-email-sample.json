@@ -1,662 +1,128 @@
 [
   {
-    "id": 1,
-    "pr_number": "PR10293",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 강태오 submitted - PR10293 - 스마트 로지스틱스 - 물류 센서 도입 - (주)센서텍 (60,000,000 KRW)",
-    "requester": "강태오",
-    "requester_email": "requester-pr10293@example.invalid",
-    "sender": "강태오 <requester-pr10293@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "(주)센서텍",
-    "total_amount": "60,000,000 KRW",
-    "description": "스마트 로지스틱스 구축을 위한 물류 센서 500개 구매 및 12개월 유지보수 연간 계약 건입니다.",
-    "recent_comments": "8/01 - 강태오: 물류 센서 설치 및 정량적 효과 산정 내역 첨부 완료했습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "센서 500개 개당 10만 원 × 12개월 유지보수비 = 총 60,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "재고 오차율 15% 감소 및 수작업 검수 시간 연간 200시간 단축"
-    }
-  },
-  {
-    "id": 2,
-    "pr_number": "PR20481",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 윤서진 submitted - PR20481 - 글로벌 커머스 - 앱 UI/UX 리뉴얼 개발 - 스튜디오 블루 (120,000,000 KRW)",
-    "requester": "윤서진",
-    "requester_email": "requester-pr20481@example.invalid",
-    "sender": "윤서진 <requester-pr20481@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "스튜디오 블루",
-    "total_amount": "120,000,000 KRW",
-    "description": "글로벌 커머스 앱의 CVR 상승을 위한 전문 디자이너 3인 4개월 투입 UI/UX 외주 리뉴얼 건입니다.",
-    "recent_comments": "8/02 - 윤서진: 디자인 에이전치 견적서 및 4개월 개발 일정 공유합니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "고급 디자이너 3명 × 4개월 (월 1,000만 원) = 총 120,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "결제 전환율(CVR) 2.5%p 상승 및 사용자 체류 시간 20% 증가"
-    }
-  },
-  {
-    "id": 3,
-    "pr_number": "PR30922",
-    "type": "Capex",
+    "id": 3, "pr_number": "PR30922", "type": "Capex",
     "email_subject": "Action required: Approve the Requisition that 임현우 submitted - PR30922 - 보안 인프라 - 클라우드 이관 및 서버 구축 - 넥스트클라우드 (80,000,000 KRW)",
-    "requester": "임현우",
-    "requester_email": "requester-pr30922@example.invalid",
-    "sender": "임현우 <requester-pr30922@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "넥스트클라우드",
-    "total_amount": "80,000,000 KRW",
+    "requester": "임현우", "requester_email": "hyunwoo.lim@example.com",
+    "sender": "임현우 <hyunwoo.lim@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "넥스트클라우드", "total_amount": "80,000,000 KRW",
     "description": "온프레미스 보안 데이터의 클라우드 마이그레이션 및 솔루션 라이선스 도입 계약 건입니다.",
     "recent_comments": "8/01 - 임현우: 보안팀 검토 완료되었으며 서버 이관 산정표 포함되어 있습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "인프라 서버 마이그레이션 3,000만 원 + 보안 솔루션 라이선스 5,000만 원 = 총 80,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "외부 데이터 침해 리스크 최소화 및 서버 유지관리비 연 3,000만 원 절감"
-    }
+    "contract_period": "2026-09-01 ~ 2027-08-31 (12개월)",
+    "requesting_department": "정보보안팀",
+    "previous_contract_comparison": "승인 완료 계약 CN-2025-041(넥스트클라우드 보안 서버 유지관리) 대비 금액은 70,000,000 KRW에서 80,000,000 KRW로 증가, 기간은 2025-01-01~2025-12-31에서 2026-09-01~2027-08-31로 변경, 범위는 기존 서버 유지관리에서 클라우드 마이그레이션과 보안 솔루션 라이선스까지 확대, 공급업체는 넥스트클라우드로 동일, 주요 조건은 분기별 지급에서 이관 검수 40%·안정화 완료 60% 지급으로 변경되었습니다. 비교 근거는 구매계약대장 CN-2025-041과 2026-08-01 견적서입니다.",
+    "approval_url": "https://ariba.example.invalid/requisitions/PR30922",
+    "cost_breakdown": {"has_data": true, "details": "인프라 서버 마이그레이션 3,000만 원 + 보안 솔루션 라이선스 5,000만 원 = 총 80,000,000원"},
+    "expected_effects": {"has_data": true, "details": "효과 유형은 유지관리비 감소이며 적용 후 12개월간 30,000,000 KRW 절감 예상입니다. 기준값은 2025년 온프레미스 유지관리비 90,000,000 KRW, 전환 후 예상비용은 60,000,000 KRW로, 90,000,000-60,000,000=30,000,000 KRW입니다. 현재 워크로드와 보안 등급이 유지되고 트래픽·라이선스 비용이 견적에 포함된다는 가정이며, 데이터 출처는 2025년 정보보안팀 유지관리 원장과 2026-08-01 넥스트클라우드 견적서입니다."}
   },
   {
-    "id": 4,
-    "pr_number": "PR40118",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 박준영 submitted - PR40118 - 데이터베이스 - DB 성능 최적화 하드웨어 도입 - 데이터솔루션스 (45,000,000 KRW)",
-    "requester": "박준영",
-    "requester_email": "requester-pr40118@example.invalid",
-    "sender": "박준영 <requester-pr40118@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "데이터솔루션스",
-    "total_amount": "45,000,000 KRW",
-    "description": "피크 타임 DB 병목 현상 해결을 위한 고성능 서버 2대 및 전용 모듈 구매 건입니다.",
-    "recent_comments": "7/30 - 박준영: 하드웨어 성능 테스트 결과지 첨부합니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "고성능 DB 서버 2대 구매 및 전용 네트워크 모듈 = 총 45,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "피크 타임 DB 응답 속도 40% 개선 및 처리 용량 2배 증대"
-    }
-  },
-  {
-    "id": 5,
-    "pr_number": "PR50831",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 정성훈 submitted - PR50831 - 사옥 보안 - 출입 관리 카메라 및 단말기 교체 - 시큐리티원 (30,000,000 KRW)",
-    "requester": "정성훈",
-    "requester_email": "requester-pr50831@example.invalid",
-    "sender": "정성훈 <requester-pr50831@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "시큐리티원",
-    "total_amount": "30,000,000 KRW",
-    "description": "사옥 출입 통제 강화를 위한 출입 단말기 20대 교체 및 카드 발급기 도입 설치 건입니다.",
-    "recent_comments": "8/03 - 정성훈: 노후 단말기 교체 관련 총무팀 협의 완료 건입니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "단말기 20대(2,000만 원) + 카드 발급기(500만 원) + 설치 공사(500만 원) = 총 30,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "출입 승인 처리 속도 50% 향상 및 보안 태그 인식 오류율 0% 달성"
-    }
-  },
-  {
-    "id": 6,
-    "pr_number": "PR60274",
-    "type": "Capex",
+    "id": 6, "pr_number": "PR60274", "type": "Capex",
     "email_subject": "Action required: Approve the Requisition that 신동현 submitted - PR60274 - 개발 인프라 - 전사 PC 및 워크스테이션 교체 - 테크나인 (100,000,000 KRW)",
-    "requester": "신동현",
-    "requester_email": "requester-pr60274@example.invalid",
-    "sender": "신동현 <requester-pr60274@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "테크나인",
-    "total_amount": "100,000,000 KRW",
+    "requester": "신동현", "requester_email": "donghyun.shin@example.com",
+    "sender": "신동현 <donghyun.shin@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "테크나인", "total_amount": "100,000,000 KRW",
     "description": "개발 생산성 증대를 위한 고성능 워크스테이션 50대 및 듀얼 모니터 100대 구매 건입니다.",
     "recent_comments": "8/02 - 신동현: 구매팀 비교 견적서 승인 완료되어 요청합니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "워크스테이션 50대(7,500만 원) + 모니터 100대(2,500만 원) = 총 100,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "빌드 및 데이터 소스 연산 소요 시간 35% 단축"
-    }
+    "contract_period": "2026-09-15 ~ 2029-09-14 (장비 보증 36개월)",
+    "requesting_department": "개발플랫폼팀",
+    "previous_contract_comparison": "승인 완료 계약 CN-2023-118(테크나인 개발 PC 30대 구매) 대비 금액은 54,000,000 KRW에서 100,000,000 KRW로 증가, 기간은 2023-09-01 단건 납품·24개월 보증에서 2026-09-15 납품·36개월 보증으로 변경, 범위는 PC 30대에서 워크스테이션 50대와 듀얼 모니터 100대로 확대, 공급업체는 테크나인으로 동일, 주요 조건은 선납 100%에서 납품 70%·검수 30% 지급으로 변경되었습니다. 비교 근거는 구매계약대장 CN-2023-118과 2026-08-02 비교견적서입니다.",
+    "approval_url": "https://ariba.example.invalid/requisitions/PR60274",
+    "cost_breakdown": {"has_data": true, "details": "워크스테이션 50대(7,500만 원) + 모니터 100대(2,500만 원) = 총 100,000,000원"},
+    "expected_effects": {"has_data": true, "details": "효과 유형은 개발 대기시간에 따른 인건비 감소이며 도입 후 12개월간 29,400,000 KRW 절감 예상입니다. 기준값은 개발자 50명의 1인당 월평균 빌드·연산 대기시간 10시간과 시간당 인건비 14,000 KRW이며, 성능 측정 결과 35% 단축에 따른 1인당 월 절감시간은 10시간×35%=3.5시간입니다. 따라서 50명×3.5시간×14,000 KRW×12개월=29,400,000 KRW입니다. 현재 인원과 월 작업량이 유지되고 35% 단축률이 12개월간 지속된다는 가정이며, 데이터 출처는 2026년 7월 개발플랫폼팀 성능 측정 보고서와 인사팀 표준 인건비표입니다."}
   },
   {
-    "id": 7,
-    "pr_number": "PR70193",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 문경민 submitted - PR70193 - 물류 센터 - 자동 포장 설비 증설 - 오토팩 (130,000,000 KRW)",
-    "requester": "문경민",
-    "requester_email": "requester-pr70193@example.invalid",
-    "sender": "문경민 <requester-pr70193@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "오토팩",
-    "total_amount": "130,000,000 KRW",
-    "description": "물류 출고 물량 증가 대응을 위한 패킹 머신 2대 추가 도입 및 라인 연동 작업 건입니다.",
-    "recent_comments": "8/01 - 문경민: 설비 단가 산정표 및 처리 세부 내역 올렸습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "패킹 머신 2대 도입 및 라인 연동 작업 = 총 130,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "시간당 물류 출고량 40% 증가 및 출고 오류 건수 80% 감소"
-    }
-  },
-  {
-    "id": 8,
-    "pr_number": "PR80345",
-    "type": "Capex",
-    "email_subject": "Action required: Approve the Requisition that 고건우 submitted - PR80345 - 사내 망 고속화 - 백본 스위치 장비 교체 - 파워네트웍스 (50,000,000 KRW)",
-    "requester": "고건우",
-    "requester_email": "requester-pr80345@example.invalid",
-    "sender": "고건우 <requester-pr80345@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "파워네트웍스",
-    "total_amount": "50,000,000 KRW",
-    "description": "사내 트래픽 병목 현상 해소를 위한 노후 백본 스위치 교체 및 배선 재설공사 요청건입니다.",
-    "recent_comments": "7/31 - 고건우: 네트워크 공사 세부 견적 첨부했습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "백본 스위치 교체 3,500만 원 + 배선 재설공사 1,500만 원 = 총 50,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "사내 망 트래픽 병목 현상 해소 및 내부 데이터 전송 속도 5배 향상"
-    }
-  },
-  {
-    "id": 9,
-    "pr_number": "PR90612",
-    "type": "Capex",
+    "id": 9, "pr_number": "PR90612", "type": "Capex",
     "email_subject": "Action required: Approve the Requisition that 양도현 submitted - PR90612 - 스마트 오피스 - 비디오 컨퍼런스 장비 구축 - 비주얼링크 (35,000,000 KRW)",
-    "requester": "양도현",
-    "requester_email": "requester-pr90612@example.invalid",
-    "sender": "양도현 <requester-pr90612@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "비주얼링크",
-    "total_amount": "35,000,000 KRW",
+    "requester": "양도현", "requester_email": "dohyun.yang@example.com",
+    "sender": "양도현 <dohyun.yang@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "비주얼링크", "total_amount": "35,000,000 KRW",
     "description": "원격 지사 회의 효율화를 위한 본사 대회의실 3개소 고화질 비디오 컨퍼런스 솔루션 도입 건입니다.",
     "recent_comments": "8/04 - 양도현: 하드웨어 설치 및 연간 유지관리 산정서 공유합니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "대회의실 3개소 솔루션 및 장비 구축 = 총 35,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "원격 지사 간 출장비 연간 1,500만 원 절감 및 화상 회의 지연 시간 0.1초 이내 제어"
-    }
+    "contract_period": "2026-09-01 ~ 2027-08-31 (구축 및 유지관리 12개월)",
+    "requesting_department": "스마트오피스팀",
+    "previous_contract_comparison": "승인 완료 계약 CN-2024-077(비주얼링크 화상회의 장비 1개소 구축) 대비 금액은 12,000,000 KRW에서 35,000,000 KRW로 증가, 기간은 2024-06-01~2025-05-31에서 2026-09-01~2027-08-31로 변경, 범위는 회의실 1개소에서 3개소로 확대, 공급업체는 비주얼링크로 동일, 주요 조건은 원격 지원만 제공하던 조건에서 분기별 현장 점검을 포함하는 조건으로 변경되었습니다. 비교 근거는 구매계약대장 CN-2024-077과 2026-08-04 유지관리 산정서입니다.",
+    "approval_url": "https://ariba.example.invalid/requisitions/PR90612",
+    "cost_breakdown": {"has_data": true, "details": "대회의실 3개소 솔루션 및 장비 구축 = 총 35,000,000원"},
+    "expected_effects": {"has_data": true, "details": "효과 유형은 출장비 감소이며 적용 후 12개월간 15,000,000 KRW 절감 예상입니다. 기준값은 최근 12개월 원격 지사 회의 출장 월 25회와 회당 평균 교통비 50,000 KRW로, 25회×50,000 KRW×12개월=15,000,000 KRW입니다. 회의 횟수와 교통 단가가 유지되고 대상 회의가 화상회의로 대체된다는 가정이며, 데이터 출처는 2025-08~2026-07 출장비 원장과 스마트오피스팀 회의실 이용 통계입니다."}
   },
   {
-    "id": 10,
-    "pr_number": "PR11203",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 한지민 submitted - PR11203 - 제니스 프로모션 - 팝업스토어 공간 대여 - 에이원 기획 (90,000,000 KRW)",
-    "requester": "한지민",
-    "requester_email": "requester-pr11203@example.invalid",
-    "sender": "한지민 <requester-pr11203@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "에이원 기획",
-    "total_amount": "90,000,000 KRW",
-    "description": "신제품 '제니스' 론칭 기념 팝업스토어 공간 대여, 연출 시공 및 운영 인력 위탁 계약 건입니다.",
-    "recent_comments": "8/02 - 한지민: 이벤트 대행사 단가 산정 내역 확인 요청드립니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "공간 대여료 3,000만 원 + 연출 시공비 4,500만 원 + 인력 운영 1,500만 원 = 총 90,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "브랜드 인지도 제고 및 잠재 고객층과의 접점 확대"
-    }
-  },
-  {
-    "id": 11,
-    "pr_number": "PR21504",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 송민재 submitted - PR21504 - 복리후생 - 임직원 건강검진 지정 병원 위탁 - 메디컬케어 센터 (140,000,000 KRW)",
-    "requester": "송민재",
-    "requester_email": "requester-pr21504@example.invalid",
-    "sender": "송민재 <requester-pr21504@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "메디컬케어 센터",
-    "total_amount": "140,000,000 KRW",
-    "description": "전사 임직원 400명 대상 연간 정기 건강검진 지정 병원 계약 승인건입니다.",
-    "recent_comments": "8/03 - 송민재: 검진 항목별 1인 단가산정서 첨부 완료했습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "임직원 400명 × 1인당 검진비 35만 원 = 총 140,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "임직원 복지 만족도 향상 및 건강 유지를 통한 업무 몰입도 증가"
-    }
-  },
-  {
-    "id": 12,
-    "pr_number": "PR31829",
-    "type": "Opex",
+    "id": 12, "pr_number": "PR31829", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 최유리 submitted - PR31829 - 해외 사업 전략 - 타깃 리서치 리포트 구매 - 글로벌 인사이트 (30,000,000 KRW)",
-    "requester": "최유리",
-    "requester_email": "requester-pr31829@example.invalid",
-    "sender": "최유리 <requester-pr31829@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "글로벌 인사이트",
-    "total_amount": "30,000,000 KRW",
+    "requester": "최유리", "requester_email": "yuri.choi@example.com",
+    "sender": "최유리 <yuri.choi@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "글로벌 인사이트", "total_amount": "30,000,000 KRW",
     "description": "동남아 3개국 시장 진출 전략 수립을 위한 전문 시장 조사 리포트 구매 비용 요청건입니다.",
     "recent_comments": "8/01 - 최유리: 3개국 데이터 패키지 비용 확인 부탁드립니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "동남아 3개국 시장 리포트 각 1,000만 원 = 총 30,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "신규 시장 진출 전략 수립 시 시장 타깃군 설정의 정밀도 향상"
-    }
+    "contract_period": "2026-09-01 ~ 2027-08-31 (데이터 이용권 12개월)",
+    "requesting_department": "해외사업전략팀",
+    "previous_contract_comparison": "본 건은 신규 계약입니다. 2026-08-01 구매계약대장에서 글로벌 인사이트, 동남아 시장 리포트, 해외사업전략팀 키워드로 승인·완료 계약을 조회했으나 유사 계약이 없었고, 구매팀 담당자 최민아가 조회 결과를 확인했습니다.",
+    "approval_url": "https://ariba.example.invalid/requisitions/PR31829",
+    "cost_breakdown": {"has_data": true, "details": "동남아 3개국 시장 리포트 각 1,000만 원 = 총 30,000,000원"},
+    "expected_effects": {"has_data": true, "details": "효과 유형은 외부 조사비용 감소이며 이용권 적용 후 12개월간 15,000,000 KRW 절감 예상입니다. 기준값은 국가별 개별 조사 견적 15,000,000 KRW×3개국=45,000,000 KRW이고 패키지 비용은 30,000,000 KRW이므로 45,000,000-30,000,000=15,000,000 KRW입니다. 동일 조사 범위와 데이터 갱신 주기를 제공한다는 가정이며, 데이터 출처는 2026-07-28 3개 조사기관 개별 견적서와 2026-08-01 글로벌 인사이트 패키지 견적서입니다."}
   },
   {
-    "id": 13,
-    "pr_number": "PR41932",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 오세진 submitted - PR41932 - 지속가능경영 - ESG 보고서 발간 외주 - 에코 컨설팅 (55,000,000 KRW)",
-    "requester": "오세진",
-    "requester_email": "requester-pr41932@example.invalid",
-    "sender": "오세진 <requester-pr41932@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "에코 컨설팅",
-    "total_amount": "55,000,000 KRW",
-    "description": "당해 연도 지속가능경영 ESG 국/영문 보고서 디자인 및 인쇄 발간 외주 용역건입니다.",
-    "recent_comments": "7/30 - 오세진: ESG 평가 컨설팅 산정액 내역 검토 바랍니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "ESG 평가 단가 및 국/영문 보고서 디자인·인쇄 일체 = 총 55,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "대외 평가 기관 투명성 확보 및 친환경 기업 이미지 제고"
-    }
-  },
-  {
-    "id": 14,
-    "pr_number": "PR51044",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 배수현 submitted - PR51044 - 고객 만족 센터 - AI 상담 챗봇 솔루션 구독 - 마인드AI (75,000,000 KRW)",
-    "requester": "배수현",
-    "requester_email": "requester-pr51044@example.invalid",
-    "sender": "배수현 <requester-pr51044@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "마인드AI",
-    "total_amount": "75,000,000 KRW",
-    "description": "24시간 CS 응대 커버리지를 위한 AI 챗봇 솔루션 연간 라이선스 및 커스텀 학습 용역건입니다.",
-    "recent_comments": "8/04 - 배수현: 챗봇 이용료 산정 내역 공유드립니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "솔루션 연간 이용료 5,000만 원 + 커스텀 학습비 2,500만 원 = 총 75,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "야간 응대 커버리지 확장 및 고객 상담 대기 시간 대폭 개선"
-    }
-  },
-  {
-    "id": 15,
-    "pr_number": "PR61720",
-    "type": "Opex",
+    "id": 15, "pr_number": "PR61720", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 권지호 submitted - PR61720 - 플래닛 론칭 - 온라인 마케팅 캠페인 - 애드포커스 (90,000,000 KRW)",
-    "requester": "권지호",
-    "requester_email": "requester-pr61720@example.invalid",
-    "sender": "권지호 <requester-pr61720@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "애드포커스",
-    "total_amount": "90,000,000 KRW",
+    "requester": "권지호", "requester_email": "jiho.kwon@example.com",
+    "sender": "권지호 <jiho.kwon@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "애드포커스", "total_amount": "90,000,000 KRW",
     "description": "신규 서비스 '플래닛' 론칭 마케팅을 위한 디지털 DA 및 옥외광고 집행 건입니다.",
     "recent_comments": "8/02 - 권지호: 매체 믹스별 금액 내역 포함되어 있습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "디지털 DA 광고 5,000만 원 + 옥외광고 4,000만 원 = 총 90,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "신규 서비스 유입자 증대 및 초기 서비스 브랜드 인지도 확보"
-    }
+    "cost_breakdown": {"has_data": true, "details": "디지털 DA 광고 5,000만 원 + 옥외광고 4,000만 원 = 총 90,000,000원"},
+    "expected_effects": {"has_data": true, "details": "신규 서비스 유입자 증대 및 초기 서비스 브랜드 인지도 확보"}
   },
   {
-    "id": 16,
-    "pr_number": "PR71311",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 서예진 submitted - PR71311 - 전사 교육 - 법정 의무 교육 플랫폼 구독 - 에듀아이 (15,000,000 KRW)",
-    "requester": "서예진",
-    "requester_email": "requester-pr71311@example.invalid",
-    "sender": "서예진 <requester-pr71311@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "에듀아이",
-    "total_amount": "15,000,000 KRW",
-    "description": "전 직원 대상 법정 의무 교육 이수를 위한 온라인 LMS 플랫폼 연간 계정 구독 건입니다.",
-    "recent_comments": "8/01 - 서예진: 직원 수 기반 ID 산정 단가 첨부 완료.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "전 직원 500명 연간 계정 ID당 3만 원 = 총 15,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "전사 컴플라이언스 준수 및 임직원 직무 윤리 의식 강화"
-    }
-  },
-  {
-    "id": 17,
-    "pr_number": "PR81409",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 안소희 submitted - PR81409 - 글로벌 커뮤니케이션 - 번역/통역 대행사 단가 계약 - 글로벌 랭귀지 (25,000,000 KRW)",
-    "requester": "안소희",
-    "requester_email": "requester-pr81409@example.invalid",
-    "sender": "안소희 <requester-pr81409@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "글로벌 랭귀지",
-    "total_amount": "25,000,000 KRW",
-    "description": "글로벌 사업부 해외 문서 번역 및 실시간 통역 지원 대행사 연간 단가 계약 승인 요청건입니다.",
-    "recent_comments": "7/29 - 안소희: 연간 예상 수량 정액 패키지 단가표입니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "연간 예상 번역 분량 기반 정액 패키지 = 총 25,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "글로벌 파트너사 관련 서류의 신속한 번역 지원 체계 구축"
-    }
-  },
-  {
-    "id": 18,
-    "pr_number": "PR91582",
-    "type": "Opex",
+    "id": 18, "pr_number": "PR91582", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 황보라 submitted - PR91582 - 브랜딩 - 신제품 패키지 디자인 외주 - 크리에이티브 워크 (18,000,000 KRW)",
-    "requester": "황보라",
-    "requester_email": "requester-pr91582@example.invalid",
-    "sender": "황보라 <requester-pr91582@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "크리에이티브 워크",
-    "total_amount": "18,000,000 KRW",
+    "requester": "황보라", "requester_email": "bora.hwang@example.com",
+    "sender": "황보라 <bora.hwang@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "크리에이티브 워크", "total_amount": "18,000,000 KRW",
     "description": "하반기 신제품 패키지 시안 5종 개발 및 디자인 마스터링 작업 비용 요청건입니다.",
     "recent_comments": "8/03 - 황보라: 시안 제작비 산정 내역서 공유드립니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "시안 5종 개발 및 최종 데이터 마스터링 = 총 18,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "시각적 미감 개선을 통한 제품 심미성 및 고급화 달성"
-    }
+    "cost_breakdown": {"has_data": true, "details": "시안 5종 개발 및 최종 데이터 마스터링 = 총 18,000,000원"},
+    "expected_effects": {"has_data": true, "details": "시각적 미감 개선을 통한 제품 심미성 및 고급화 달성"}
   },
   {
-    "id": 19,
-    "pr_number": "PR12399",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 하은서 submitted - PR12399 - 품질 관리 - 고객 만족도 조사(CSI) 위탁 - 팩트 리서치 (22,000,000 KRW)",
-    "requester": "하은서",
-    "requester_email": "requester-pr12399@example.invalid",
-    "sender": "하은서 <requester-pr12399@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "팩트 리서치",
-    "total_amount": "22,000,000 KRW",
-    "description": "고객 페인포인트 추출을 위한 표본 2,000명 대상 전화/모바일 설문 조사 용역건입니다.",
-    "recent_comments": "8/02 - 하은서: 설문 표본 당 단가 내역서 첨부했습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "표본 2,000명 대상 전화/모바일 설문 조사 일체 = 총 22,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "하반기 품질 개선을 위한 세부 고객 페인포인트 추출"
-    }
-  },
-  {
-    "id": 20,
-    "pr_number": "PR22410",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 노승현 submitted - PR22410 - 자산 관리 - 사옥 보안/방재 위탁 운영 - SafeFire (28,000,000 KRW)",
-    "requester": "노승현",
-    "requester_email": "requester-pr22410@example.invalid",
-    "sender": "노승현 <requester-pr22410@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "SafeFire",
-    "total_amount": "28,000,000 KRW",
-    "description": "본사 사옥 소방 및 보안 정기 점검을 위한 외부 전문업체 연간 위탁 운영 계약건입니다.",
-    "recent_comments": "8/01 - 노승현: 월 정액 점검 내역서 올렸습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "월 위탁 점검비 233만 원 × 12개월 = 총 28,000,000원"
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "사옥 시설 안전성 확보 및 사고 발생 예방 체계 유지"
-    }
-  },
-  {
-    "id": 21,
-    "pr_number": "PR33011",
-    "type": "Opex",
+    "id": 21, "pr_number": "PR33011", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 변백현 submitted - PR33011 - 정보 보안 - 인트라넷 보안 점검 - 시큐어랩 (40,000,000 KRW)",
-    "requester": "변백현",
-    "requester_email": "requester-pr33011@example.invalid",
-    "sender": "변백현 <requester-pr33011@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "시큐어랩",
-    "total_amount": "40,000,000 KRW",
+    "requester": "변백현", "requester_email": "baekhyun.byun@example.com",
+    "sender": "변백현 <baekhyun.byun@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "시큐어랩", "total_amount": "40,000,000 KRW",
     "description": "사내 인트라넷 취약점 점검을 위한 외부 보안 전문 컨설팅 용역입니다.",
     "recent_comments": "8/02 - 변백현: 세부 내역 없이 총 4,000만 원으로 일괄 견적되었습니다. 확인 바랍니다.",
-    "cost_breakdown": {
-      "has_data": false,
-      "details": null
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "시스템 취약점을 사전에 파악하여 외부 공격 위험 예방"
-    }
+    "cost_breakdown": {"has_data": false, "details": null},
+    "expected_effects": {"has_data": true, "details": "시스템 취약점을 사전에 파악하여 외부 공격 위험 예방"}
   },
   {
-    "id": 22,
-    "pr_number": "PR43102",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 구자경 submitted - PR43102 - 채용 브랜딩 - 포털 상단 배너 광고 - 잡포털 (15,000,000 KRW)",
-    "requester": "구자경",
-    "requester_email": "requester-pr43102@example.invalid",
-    "sender": "구자경 <requester-pr43102@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "잡포털",
-    "total_amount": "15,000,000 KRW",
-    "description": "상반기 우수 개발 인재 수시 채용을 위한 메인 배너 광고 집행건입니다.",
-    "recent_comments": "8/01 - 구자경: 기간 단가 표기가 누락되어 총금액으로 승인 부탁드립니다.",
-    "cost_breakdown": {
-      "has_data": false,
-      "details": null
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "우수 인재 지원자 모집 유도 및 브랜드 인지도 확대"
-    }
-  },
-  {
-    "id": 23,
-    "pr_number": "PR53219",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 장동건 submitted - PR53219 - 영업 지원 - 업무용 차량 월간 렌트 - 렌트카코리아 (12,000,000 KRW)",
-    "requester": "장동건",
-    "requester_email": "requester-pr53219@example.invalid",
-    "sender": "장동건 <requester-pr53219@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "렌트카코리아",
-    "total_amount": "12,000,000 KRW",
-    "description": "지방 영업 활동 대응을 위한 업무용 차량 월간 장기 렌트 계약건입니다.",
-    "recent_comments": "7/30 - 장동건: 차종 및 대수별 세부 대여료 미첨부상태입니다.",
-    "cost_breakdown": {
-      "has_data": false,
-      "details": null
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "영업 활동 시 이동 편의 제공 및 기동성 제고"
-    }
-  },
-  {
-    "id": 24,
-    "pr_number": "PR63340",
-    "type": "Opex",
+    "id": 24, "pr_number": "PR63340", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 손화영 submitted - PR63340 - 사내 복지 - 카페테리아 원두 정기 납품 - 빈즈 로스터스 (8,000,000 KRW)",
-    "requester": "손화영",
-    "requester_email": "requester-pr63340@example.invalid",
-    "sender": "손화영 <requester-pr63340@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "빈즈 로스터스",
-    "total_amount": "8,000,000 KRW",
+    "requester": "손화영", "requester_email": "hwayoung.son@example.com",
+    "sender": "손화영 <hwayoung.son@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "빈즈 로스터스", "total_amount": "8,000,000 KRW",
     "description": "사내 카페테리아 원두 정기 공급 계약건입니다.",
     "recent_comments": "8/03 - 손화영: 월 소요 중량 및 kg당 단가 표기 없이 작성되었습니다.",
-    "cost_breakdown": {
-      "has_data": false,
-      "details": null
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "임직원 사기 진작 및 사내 휴게 공간 만족도 제고"
-    }
+    "cost_breakdown": {"has_data": false, "details": null},
+    "expected_effects": {"has_data": true, "details": "임직원 사기 진작 및 사내 휴게 공간 만족도 제고"}
   },
   {
-    "id": 25,
-    "pr_number": "PR73455",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 신류진 submitted - PR73455 - 서비스 운영 - 푸시 알림 서버 트래픽 리소스 - 클라우드플러스 (20,000,000 KRW)",
-    "requester": "신류진",
-    "requester_email": "requester-pr73455@example.invalid",
-    "sender": "신류진 <requester-pr73455@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "클라우드플러스",
-    "total_amount": "20,000,000 KRW",
-    "description": "모바일 앱 대량 푸시 알림 전송을 위한 추가 네트워크 리소스 구매건입니다.",
-    "recent_comments": "8/02 - 신류진: 사용 트래픽 단위당 계산식이 미포함되었습니다.",
-    "cost_breakdown": {
-      "has_data": false,
-      "details": null
-    },
-    "expected_effects": {
-      "has_data": true,
-      "details": "대량 알림 메시지 발송 시 시스템 과부하 예방"
-    }
-  },
-  {
-    "id": 26,
-    "pr_number": "PR84011",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 도경수 submitted - PR84011 - 개발 환경 - 'J-IDE' 라이선스 연간 구독 - 툴즈 소프트 (15,000,000 KRW)",
-    "requester": "도경수",
-    "requester_email": "requester-pr84011@example.invalid",
-    "sender": "도경수 <requester-pr84011@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "툴즈 소프트",
-    "total_amount": "15,000,000 KRW",
-    "description": "개발 생산성 도구 J-IDE 소프트웨어의 개발자 30명 연간 라이선스 구매건입니다.",
-    "recent_comments": "8/01 - 도경수: 금액 산정 내역(30명×50만 원) 첨부됨.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "1인당 50만 원 × 연간 30명 = 총 15,000,000원"
-    },
-    "expected_effects": {
-      "has_data": false,
-      "details": null
-    }
-  },
-  {
-    "id": 27,
-    "pr_number": "PR94122",
-    "type": "Opex",
+    "id": 27, "pr_number": "PR94122", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 차은우 submitted - PR94122 - 총무 운영 - 본사 사무실 청소 위탁 - 클린파트너 (36,000,000 KRW)",
-    "requester": "차은우",
-    "requester_email": "requester-pr94122@example.invalid",
-    "sender": "차은우 <requester-pr94122@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "클린파트너",
-    "total_amount": "36,000,000 KRW",
+    "requester": "차은우", "requester_email": "eunwoo.cha@example.com",
+    "sender": "차은우 <eunwoo.cha@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "클린파트너", "total_amount": "36,000,000 KRW",
     "description": "사옥 환경 관리를 위한 외부 전문 청소 대행사 연간 위탁용역 계약 요청건입니다.",
     "recent_comments": "7/31 - 차은우: 월 300만 원 기준 1년 산정서 첨부 완료.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "월 300만 원 × 12개월 = 총 36,000,000원"
-    },
-    "expected_effects": {
-      "has_data": false,
-      "details": null
-    }
+    "cost_breakdown": {"has_data": true, "details": "월 300만 원 × 12개월 = 총 36,000,000원"},
+    "expected_effects": {"has_data": false, "details": null}
   },
   {
-    "id": 28,
-    "pr_number": "PR15233",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 표지훈 submitted - PR15233 - 조직 문화 - 임직원 명절 선물 세트 구매 - 유통플러스 (22,500,000 KRW)",
-    "requester": "표지훈",
-    "requester_email": "requester-pr15233@example.invalid",
-    "sender": "표지훈 <requester-pr15233@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "유통플러스",
-    "total_amount": "22,500,000 KRW",
-    "description": "추석 명절 전사 임직원 450명 대상 선물 세트 일괄 구매건입니다.",
-    "recent_comments": "8/04 - 표지훈: 1인당 5만 원 상당 수량 산정표 올렸습니다.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "5만 원 상당 세트 × 450명 = 총 22,500,000원"
-    },
-    "expected_effects": {
-      "has_data": false,
-      "details": null
-    }
-  },
-  {
-    "id": 29,
-    "pr_number": "PR25344",
-    "type": "Opex",
-    "email_subject": "Action required: Approve the Requisition that 남주혁 submitted - PR25344 - 자산 관리 - 기밀 문서 파쇄 서비스 이용 - 샤인 문서파쇄 (12,000,000 KRW)",
-    "requester": "남주혁",
-    "requester_email": "requester-pr25344@example.invalid",
-    "sender": "남주혁 <requester-pr25344@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "샤인 문서파쇄",
-    "total_amount": "12,000,000 KRW",
-    "description": "사내 보안 문서 처리를 위한 전문 파쇄 차량 정기 방문(월 2회) 용역건입니다.",
-    "recent_comments": "8/02 - 남주혁: 회당 50만 원 연간 24회 산정 완료.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "회당 50만 원 × 연 24회 = 총 12,000,000원"
-    },
-    "expected_effects": {
-      "has_data": false,
-      "details": null
-    }
-  },
-  {
-    "id": 30,
-    "pr_number": "PR35455",
-    "type": "Opex",
+    "id": 30, "pr_number": "PR35455", "type": "Opex",
     "email_subject": "Action required: Approve the Requisition that 이도현 submitted - PR35455 - 시스템 운영 - 클라우드 인프라 크레딧 구매 - 네트콤 (10,000,000 KRW)",
-    "requester": "이도현",
-    "requester_email": "requester-pr35455@example.invalid",
-    "sender": "이도현 <requester-pr35455@example.invalid>",
-    "recipients": ["buyer@example.invalid"],
-    "vendor": "네트콤",
-    "total_amount": "10,000,000 KRW",
+    "requester": "이도현", "requester_email": "dohyun.lee@example.com",
+    "sender": "이도현 <dohyun.lee@example.com>", "recipients": ["buyer@example.invalid"],
+    "vendor": "네트콤", "total_amount": "10,000,000 KRW",
     "description": "신규 프로젝트 테스트용 클라우드 인프라 서버 크레딧 패키지 구매건입니다.",
     "recent_comments": "8/03 - 이도현: 패키지 가격 견적서 첨부 완료.",
-    "cost_breakdown": {
-      "has_data": true,
-      "details": "개발용 서버 크레딧 패키지 = 총 10,000,000원"
-    },
-    "expected_effects": {
-      "has_data": false,
-      "details": null
-    }
+    "cost_breakdown": {"has_data": true, "details": "개발용 서버 크레딧 패키지 = 총 10,000,000원"},
+    "expected_effects": {"has_data": false, "details": null}
   }
 ]
