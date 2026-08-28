@@ -783,8 +783,8 @@ def _codex_version() -> str:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Office Blue", page_icon="📬", layout="wide")
-    st.title("📬 Office Blue")
+    st.set_page_config(page_title="Maily", page_icon="📬", layout="wide")
+    st.title("📬 Maily")
     st.caption("메일을 한 번에 분류하고, 긴급하고 비용 큰 건부터 봅니다. 발송은 하지 않습니다.")
 
     sources = load_sources()

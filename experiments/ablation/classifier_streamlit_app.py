@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import Callable
 
@@ -14,6 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = "email-classifier"
 EXPERIMENT_DIR = Path(__file__).resolve().parent / EXPERIMENT
 RUNNER = Path(__file__).resolve().parent / "run.py"
+UPLOAD_DIR = ROOT / "experiments" / "instances" / ".uploads"
+VALID_LABELS = {
+    "구매 승인 검토 필요 이메일",
+    "논의 내용 요약 필요 이메일",
+    "일반 이메일",
+}
 
 
 AMOUNT_PATTERN = re.compile(
@@ -69,6 +76,13 @@ def email_text(email: dict[str, object]) -> tuple[str, str]:
     return subject, body
 
 
+def parse_email_json(raw: bytes) -> dict[str, object]:
+    email = json.loads(raw.decode("utf-8"))
+    if not isinstance(email, dict):
+        raise ValueError("이메일 JSON은 객체 한 건이어야 합니다.")
+    return email
+
+
 def email_amount(email: dict[str, object], subject: str, body: str) -> str:
     structured = str(email.get("total_amount") or "").strip()
     if structured:
@@ -86,6 +100,21 @@ def email_amount(email: dict[str, object], subject: str, body: str) -> str:
     return "금액 미상"
 
 
+def validate_classifier_result(result: object) -> object:
+    if not isinstance(result, dict):
+        return result
+    label = result.get("label")
+    if label not in VALID_LABELS:
+        return {
+            "error": (
+                "분류 결과가 공식 taxonomy를 위반했습니다: "
+                f"{label or '라벨 없음'}"
+            ),
+            "invalid_result": result,
+        }
+    return result
+
+
 def load_result(run_dir: Path, condition: str) -> object:
     folder = run_dir / condition
     for filename in ("result.json", "output.txt", "error.txt"):
@@ -99,35 +128,42 @@ def load_result(run_dir: Path, condition: str) -> object:
                 candidate = re.sub(r"^```[A-Za-z0-9_-]*[ \t]*\r?\n?", "", candidate)
                 candidate = re.sub(r"\r?\n?```$", "", candidate).strip()
             try:
-                return json.loads(candidate)
+                return validate_classifier_result(json.loads(candidate))
             except json.JSONDecodeError:
                 return text
     return {"error": "결과 파일이 없습니다."}
 
 
 def run_ab(
-    case_path: Path,
+    email: dict[str, object],
     on_event: Callable[[dict[str, object]], None] | None = None,
 ) -> Path:
-    process = subprocess.Popen(
-        [sys.executable, "-u", str(RUNNER), EXPERIMENT, "--case", str(case_path)],
-        cwd=ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    case_path = UPLOAD_DIR / f"{uuid.uuid4().hex}.json"
+    case_path.write_text(json.dumps(email, ensure_ascii=False), encoding="utf-8")
     result_path: Path | None = None
-    for raw_line in process.stdout or ():
-        line = raw_line.strip()
-        if line.startswith("AB_EVENT "):
-            if on_event is not None:
-                on_event(json.loads(line.removeprefix("AB_EVENT ")))
-        elif line:
-            result_path = Path(line)
-    stderr = process.stderr.read().strip() if process.stderr else ""
-    process.wait()
+    stderr = ""
+    try:
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(RUNNER), EXPERIMENT, "--case", str(case_path)],
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        for raw_line in process.stdout or ():
+            line = raw_line.strip()
+            if line.startswith("AB_EVENT "):
+                if on_event is not None:
+                    on_event(json.loads(line.removeprefix("AB_EVENT ")))
+            elif line:
+                result_path = Path(line)
+        stderr = process.stderr.read().strip() if process.stderr else ""
+        process.wait()
+    finally:
+        case_path.unlink(missing_ok=True)
     if result_path is None:
         raise RuntimeError(stderr or "실험 결과를 확인할 수 없습니다.")
     return result_path
@@ -138,6 +174,13 @@ def render_result(title: str, result: object, amount: str) -> None:
     with st.container(border=True):
         if not isinstance(result, dict):
             st.code(str(result), language="text")
+            return
+        if result.get("error"):
+            st.error(str(result["error"]))
+            invalid_result = result.get("invalid_result")
+            if invalid_result is not None:
+                with st.expander("계약을 위반한 원본 결과"):
+                    st.json(invalid_result)
             return
         st.markdown("#### 분류")
         st.write(result.get("label") or "분류 미지정")
@@ -161,8 +204,17 @@ def main() -> None:
     st.title("Email Classifier A/B 테스트")
     st.caption("동일한 이메일을 Skill 미적용 baseline과 적용 treatment로 분류합니다.")
 
-    case_path = st.selectbox("테스트 케이스", cases, format_func=lambda path: path.name)
-    email = json.loads(case_path.read_text(encoding="utf-8"))
+    uploaded = st.file_uploader("이메일 JSON 업로드", type="json")
+    if uploaded is not None:
+        try:
+            email = parse_email_json(uploaded.getvalue())
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            st.error(f"JSON을 불러올 수 없습니다: {exc}")
+            return
+        st.success(f"{uploaded.name} 파일을 불러왔습니다.")
+    else:
+        case_path = st.selectbox("기본 테스트 케이스", cases, format_func=lambda path: path.name)
+        email = json.loads(case_path.read_text(encoding="utf-8"))
     subject, body = email_text(email)
     amount = email_amount(email, subject, body)
     st.markdown("### 이메일")
@@ -184,6 +236,10 @@ def main() -> None:
                 label = labels.get(condition, condition)
                 if state == "running":
                     slot.info(f"{label}: 실행 중 (최대 {event.get('timeout_seconds')}초)")
+                elif state == "retrying":
+                    slot.warning(
+                        f"{label}: 출력 계약 위반으로 {event.get('attempt')}차 재시도 중"
+                    )
                 elif state == "completed":
                     slot.success(f"{label}: 완료")
                 else:
@@ -191,7 +247,7 @@ def main() -> None:
                     slot.error(f"{label}: 실패 — {event.get('error') or '원인 미상'}")
 
             try:
-                st.session_state.classifier_run_dir = str(run_ab(case_path, show_event))
+                st.session_state.classifier_run_dir = str(run_ab(email, show_event))
             except RuntimeError as exc:
                 status.update(label="실행 실패", state="error", expanded=True)
                 st.error(str(exc))

@@ -184,6 +184,11 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(len(inbox), 10)
         self.assertEqual({email["case_id"] for email in inbox}, expected_pr_numbers)
         self.assertEqual(len({email["thread_id"] for email in inbox}), 10)
+        self.assertEqual(
+            [email["case_id"] for email in inbox],
+            ["PR30922", "PR60274", "PR90612", "PR31829", "PR61720",
+             "PR91582", "PR33011", "PR63340", "PR94122", "PR35455"],
+        )
 
     def test_limit_applies(self):
         self.assertEqual(len(load_inbox(SAMPLE, limit=7)), 7)
@@ -218,6 +223,17 @@ class InboxTests(unittest.TestCase):
         """`has_data: false`를 플래그로 넘기지 않고 본문에 적어 모델이 읽게 한다."""
         bodies = [e["body"] for e in load_inbox(SAMPLE)]
         self.assertTrue(any("기재되지 않음" in body for body in bodies))
+
+    def test_first_four_purchase_reviews_are_complete(self):
+        """앞의 네 건은 구매 검토 Skill의 네 필수 항목을 모두 본문에 제공한다."""
+        for email in load_inbox(SAMPLE)[:4]:
+            self.assertNotIn("기재되지 않음", email["body"], email["case_id"])
+            self.assertIn("비용 산출 근거:", email["body"])
+            self.assertIn("예상 정량 효과:", email["body"])
+            self.assertIn("이전 유사 계약과의 차이:", email["body"])
+            self.assertIn("계약/적용 기간:", email["body"])
+            self.assertIn("요청 부서:", email["body"])
+            self.assertIn("승인 검토 URL: https://", email["body"])
 
     def test_purchase_review_fixtures_have_replyable_requesters(self):
         """구매 검토 fixture는 Gmail 초안 수신인으로 쓸 요청자 주소를 보존한다."""

@@ -38,6 +38,29 @@ def emit_event(condition: str, state: str, **details: object) -> None:
     print(f"AB_EVENT {json.dumps(event, ensure_ascii=False)}", flush=True)
 
 
+def result_contract_error(result: CodexResult, config: dict[str, object]) -> str | None:
+    allowed_labels = config.get("allowed_labels")
+    if not isinstance(allowed_labels, list) or not allowed_labels:
+        return None
+    if result.parsed is None or not isinstance(result.parsed, dict):
+        return "JSON 객체로 파싱되지 않았습니다."
+    label = result.parsed.get("label")
+    if label not in allowed_labels:
+        allowed = ", ".join(f"`{item}`" for item in allowed_labels)
+        return f"label `{label or '없음'}`은 허용되지 않습니다. 허용값: {allowed}"
+    return None
+
+
+def contract_retry_prompt(prompt: str, contract_error: str) -> str:
+    return (
+        f"{prompt}\n\n"
+        "직전 출력이 아래 계약을 위반했습니다. input.json을 다시 읽고 사실과 부정 표현을 "
+        "재확인한 뒤, 계약을 만족하는 JSON 전체를 다시 반환하세요. 직전 출력의 라벨이나 "
+        "근거를 그대로 답습하지 마세요.\n"
+        f"계약 오류: {contract_error}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one Skill ablation experiment.")
     parser.add_argument("experiment", help="Directory name under experiments/ablation")
@@ -76,6 +99,7 @@ def main() -> None:
 
     treatment_path = config.get("treatment_skill_path")
     timeout_seconds = int(config.get("condition_timeout_seconds", 150))
+    max_contract_retries = int(config.get("max_contract_retries", 0))
     service_tier = args.service_tier or config.get("service_tier")
 
     manifest = {
@@ -98,17 +122,38 @@ def main() -> None:
         started_at = utc_now()
         emit_event(condition, "running", timeout_seconds=timeout_seconds)
         use_path = treatment_path and condition == "treatment"
+        attempts = 0
         try:
-            result = run_codex(
-                prompt=prompt,
-                payload=payload,
-                skill=None if use_path else skill,
-                skill_path=(ROOT / treatment_path) if use_path else None,
-                model=config["model"],
-                reasoning_effort=config["reasoning_effort"],
-                service_tier=service_tier,
-                timeout_seconds=timeout_seconds,
-            )
+            current_prompt = prompt
+            while True:
+                attempts += 1
+                result = run_codex(
+                    prompt=current_prompt,
+                    payload=payload,
+                    skill=None if use_path else skill,
+                    skill_path=(ROOT / treatment_path) if use_path else None,
+                    model=config["model"],
+                    reasoning_effort=config["reasoning_effort"],
+                    service_tier=service_tier,
+                    timeout_seconds=timeout_seconds,
+                )
+                contract_error = result_contract_error(result, config)
+                if contract_error is None:
+                    break
+                invalid_dir = run_dir / condition
+                invalid_dir.mkdir(parents=True, exist_ok=True)
+                (invalid_dir / f"invalid-output-attempt-{attempts}.txt").write_text(
+                    result.text + "\n", encoding="utf-8"
+                )
+                if attempts > max_contract_retries:
+                    raise ValueError(f"분류 출력 계약 위반: {contract_error}")
+                emit_event(
+                    condition,
+                    "retrying",
+                    attempt=attempts + 1,
+                    error=contract_error,
+                )
+                current_prompt = contract_retry_prompt(prompt, contract_error)
             save_result(run_dir / condition, result)
             error = None
         except Exception as exc:
@@ -120,6 +165,7 @@ def main() -> None:
         return {
             "skill": skill,
             "skill_path": treatment_path if use_path else None,
+            "attempts": attempts,
             "started_at": started_at,
             "finished_at": utc_now(),
             "error": error,
