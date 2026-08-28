@@ -291,7 +291,7 @@ def render_stage_sections(
 ) -> None:
     """처리 단계별로 묶어서 보여준다.
 
-    "무엇을 더 해야 하는가"가 화면의 첫 질문이라 `처리 필요`가 맨 위에 오고, 회신 생성
+    "무엇을 더 해야 하는가"가 화면의 첫 질문이라 `회신 검토 필요`가 맨 위에 오고, 회신 생성
     버튼도 탭을 넘기지 않고 그 자리에 둔다.
     """
     selected: set[str] = st.session_state.setdefault("selected_cases", set())
@@ -442,7 +442,7 @@ def render_fold_list(items: list[dict[str, Any]], settings: dict[str, Any]) -> N
 
 
 def render_pick_tab(inbox: list[dict[str, Any]], settings: dict[str, Any]) -> None:
-    """현재 화면에서 빠져 있다. 선택·회신은 목록 페이지의 `처리 필요` 구역이 담당한다."""
+    """현재 화면에서 빠져 있다. 선택·회신은 목록 페이지의 `회신 검토 필요` 구역이 담당한다."""
     if st.session_state.get("job") is not None:
         render_running_batch()
         return
