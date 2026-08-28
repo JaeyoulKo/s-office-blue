@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import random
 import re
 import unittest
@@ -168,7 +169,21 @@ class InboxTests(unittest.TestCase):
     def test_accepts_object_and_array(self):
         single = load_inbox(PROJECT_ROOT / "data/synthetic/emails/purchase-request.json")
         self.assertEqual(len(single), 1)
-        self.assertEqual(len(load_inbox(SAMPLE)), 30)
+        records = json.loads(SAMPLE.read_text(encoding="utf-8"))
+        inbox = load_inbox(SAMPLE)
+        expected_pr_numbers = {
+            "PR30922", "PR60274", "PR90612", "PR31829", "PR61720",
+            "PR91582", "PR33011", "PR63340", "PR94122", "PR35455",
+        }
+        self.assertEqual(len(records), 10)
+        self.assertEqual({record["pr_number"] for record in records}, expected_pr_numbers)
+        self.assertEqual(len({record["id"] for record in records}), 10)
+        self.assertTrue(all(record.get("sender") for record in records))
+        self.assertTrue(all(record.get("recipients") for record in records))
+        self.assertTrue(all(record.get("requester_email") for record in records))
+        self.assertEqual(len(inbox), 10)
+        self.assertEqual({email["case_id"] for email in inbox}, expected_pr_numbers)
+        self.assertEqual(len({email["thread_id"] for email in inbox}), 10)
 
     def test_limit_applies(self):
         self.assertEqual(len(load_inbox(SAMPLE, limit=7)), 7)
@@ -196,8 +211,8 @@ class InboxTests(unittest.TestCase):
     def test_amount_is_read_from_the_body_not_a_field(self):
         inbox = load_inbox(SAMPLE)
         amounts = [e["amount"].value for e in inbox if e["amount"].known]
-        self.assertGreaterEqual(len(amounts), 25)
-        self.assertIn(140_000_000, amounts)
+        self.assertEqual(len(amounts), 10)
+        self.assertIn(100_000_000, amounts)
 
     def test_missing_sections_appear_as_text_for_the_model_to_judge(self):
         """`has_data: false`를 플래그로 넘기지 않고 본문에 적어 모델이 읽게 한다."""
@@ -208,7 +223,7 @@ class InboxTests(unittest.TestCase):
         """구매 검토 fixture는 Gmail 초안 수신인으로 쓸 요청자 주소를 보존한다."""
         for email in load_inbox(SAMPLE):
             address = parseaddr(email["sender"])[1]
-            self.assertTrue(address.endswith("@example.invalid"), email["case_id"])
+            self.assertTrue(address.endswith("@example.com"), email["case_id"])
             self.assertEqual(email["recipients"], ["buyer@example.invalid"])
             self.assertIn(f"요청자 이메일: {address}", email["body"])
 
