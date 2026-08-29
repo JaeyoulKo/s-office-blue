@@ -95,6 +95,15 @@ class StageTests(unittest.TestCase):
         self.assertEqual(stages, set(STAGE_ORDER))
         self.assertEqual(stages, set(STAGE_VIEW))
 
+    def test_discussion_review_stage_copy_describes_the_available_action(self):
+        from main_service.render import STAGE_VIEW
+
+        self.assertEqual(STAGE_VIEW["unsupported"][0], "🕓 내용 요약 검토 필요")
+        self.assertEqual(
+            STAGE_VIEW["unsupported"][1],
+            "논의 내용 요약을 할 수 있는 건입니다. 눌러서 선택하세요.",
+        )
+
 
 class ExtractDraftTests(unittest.TestCase):
     def setUp(self):
